@@ -25,7 +25,6 @@ mysql = MySQL(app)
 
 #Google Translate credentials
 tr_credentials = service_account.Credentials.from_service_account_file("My Project-1f2512d178cb.json")
-translate_client = translate.Client(credentials=tr_credentials)
 
 #Google Sheets credentials
 scopes = ['https://www.googleapis.com/auth/spreadsheets']
@@ -46,22 +45,6 @@ box_auth = boxsdk.JWTAuth(
 
 box_access_token = box_auth.authenticate_instance()
 box_client = boxsdk.Client(box_auth)
-
-# Google Translate utility
-def dataTranslate(data):
-	indices = []
-	for d in data:
-		indices.append(d[0])
-
-	transdata = []
-	dataplustrans = []
-	for d in data:
-		translation = translate_client.translate(d[1], target_language="en", source_language="it")
-		transdata.append(translation['translatedText'])
-		dlist = list(d)
-		dlist.append(translation['translatedText'])
-		dataplustrans.append(dlist)
-	return dataplustrans, indices
 
 #Roman numeral utility
 def toRoman(data):
@@ -131,73 +114,6 @@ def init():
 		return render_template('index.html', arc=arc, error="I'm sorry, that's an invalid ARC. Please try again.")
 
 	return redirect('/PinP')
-
-@app.route("/PPP") # PPP page
-def showPPP():
-
-	if session.get('logged_in') and session["logged_in"]:
-		# PPP ids are a combination of location data
-		pppCur = mysql.connection.cursor()
-		pppQuery = "SELECT uuid, description, id, location, material FROM PPP WHERE id LIKE %s;"
-		loc = ""
-		if (session.get('region')):
-			loc += session['region']
-		if (session.get('insula')):
-			loc += session['insula']
-		if (session.get('property')):
-			loc += session['property']
-		if (session.get('room')):
-			loc += session['room']
-
-		if loc != "":
-			loc += "%"
-
-		pppCur.execute(pppQuery, [loc])
-		data = pppCur.fetchall()
-		pppCur.close()
-
-		dataplustrans, indices = dataTranslate(data)
-
-		ppp = reg = ins = prop = room = iframeurl = ""
-
-		#each region has its own PDF doc
-		if (session.get('region')):
-			reg = session['region']
-			if session['region'] == "1":
-				iframeurl = "https://umass.app.box.com/embed/s/t1a98m2my6eoxjciwqa0fpcmth2zwe3b?sortColumn=date&view=list"
-			if session['region'] == "2":
-				iframeurl = "https://umass.app.box.com/embed/s/j8ln3zdz61rh9aiszhhs3b0pn20dv2ky?sortColumn=date&view=list"
-			if session['region'] == "3":
-				iframeurl = "https://umass.app.box.com/embed/s/mgki1vhjmijzpcjqpb37vucfozqhr6kh?sortColumn=date&view=list"
-			if session['region'] == "4":
-				iframeurl = ""
-			if session['region'] == "5":
-				iframeurl = "https://umass.app.box.com/embed/s/398sfo7og26lqms6a7cynwczomujt7b8?sortColumn=date&view=list"
-			if session['region'] == "6":
-				iframeurl = "https://umass.app.box.com/embed/s/vi6ysrxgfr4dcoc5x87alu82d2lakua5?sortColumn=date&view=list"
-			if session['region'] == "7":
-				iframeurl = "https://umass.app.box.com/embed/s/26wkz8v3cqhkrwmeipas1jtuz0eobm3z?sortColumn=date&view=list"
-			if session['region'] == "8":
-				iframeurl = "https://umass.app.box.com/embed/s/aucwrzc5k7dtm786itiwc4gch91nr83k?sortColumn=date&view=list"
-			if session['region'] == "9":
-				iframeurl = "https://umass.app.box.com/embed/s/fxiqa4fu8ki1zmf3oiq357fgaiegxd48?sortColumn=date&view=list"
-		if (session.get('insula')):
-			ins = session['insula']
-		if (session.get('property')):
-			prop = session['property']
-		if (session.get('room')):
-			room = session['room']
-
-		if (session.get('carryoverPPP')):
-			ppp = session['carryoverPPP']
-
-		return render_template('PPP.html',
-			catextppp=ppp, dbdata = dataplustrans, indices = indices,
-			region=reg, insula=ins, property=prop, room=room, iframeurl = iframeurl, arc = session['arc'])
-
-	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
 
 @app.route('/PPM') #PPM page
 def showPPM():
@@ -330,46 +246,6 @@ def ppmReviewed():
 
 	return redirect('/PPM')
 
-@app.route('/ppp-reviewed')
-def pppReviewed():
-	strargs = request.args['data'].replace("[", "").replace("]", "")
-	pppCur = mysql.connection.cursor()
-	pppQuery = "UPDATE PPP SET reviewed=1 WHERE uuid in (" + strargs + ") ;"
-	pppCur.execute(pppQuery)
-	mysql.connection.commit()
-	pppCur.close()
-
-	return redirect('/PPP')
-
-#When items are changed via update form, update database
-@app.route('/update-ppp', methods=['POST'])
-def updatePPP():
-	pppCur = mysql.connection.cursor()
-	dictargs = request.form.to_dict()
-	for k, v in dictargs.items():
-		vrep = v.replace('\n', ' ').replace('\r', ' ').replace('\'', "\\'")
-		sep = k.split("_")
-		print(sep[0])
-		pppQuery = "INSERT INTO PPP(`uuid`) SELECT * FROM ( SELECT '" + sep[0] + "' ) AS tmp WHERE NOT EXISTS ( SELECT 1 FROM PPP WHERE `uuid` = '" + sep[0] + "' ) LIMIT 1;"
-		pppCur.execute(pppQuery)
-		mysql.connection.commit()
-		if sep[1] == "a":
-			pppQueryA = "UPDATE PPP SET `id` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
-			pppCur.execute(pppQueryA)
-		if sep[1] == "b":
-			pppQueryB = "UPDATE PPP SET `location` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
-			pppCur.execute(pppQueryB)
-		if sep[1] == "c":
-			pppQueryC = "UPDATE PPP SET `material` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
-			pppCur.execute(pppQueryC)
-		if sep[1] == "d":
-			pppQueryD = "UPDATE PPP SET `description` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
-			pppCur.execute(pppQueryD)
-	mysql.connection.commit()
-	pppCur.close()
-
-	return redirect('/PPP')
-
 @app.route('/update-ppm', methods=['POST'])
 def updatePPM():
 	ppmCur = mysql.connection.cursor()
@@ -393,7 +269,7 @@ def showPinP():
 		pinpCur = mysql.connection.cursor()
 
 		#Join tbl_webpage_images and tbl_box_images on id
-		pinpQuery = "SELECT `archive_id`, `id_box_file`, `img_alt`, `already_used` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
+		pinpQuery = "SELECT `archive_id`, `id_box_file`, `img_alt`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -440,9 +316,6 @@ def showPinP():
 		if (session.get('room')):
 			room = session['room']
 
-		if (session.get('carryoverPinP')):
-			pinp = session['carryoverPinP']
-
 		return render_template('PinP.html',
 			catextpinp=pinp, dbdata = data, indices = indices,
 			region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
@@ -482,112 +355,8 @@ def GIS():
 	return render_template('GIS.html',
 		region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
 
-
-@app.route('/descriptions') #Copying data from workspace to Google Sheet 
-def showDescs():
-	if session.get('logged_in') and session["logged_in"]:
-
-		ppp = ppm = ppmimg = pinp = reg = ins = prop = room = gdoc = ""
-
-		if (session.get('region')):
-			reg = session['region']
-		if (session.get('insula')):
-			ins = session['insula']
-		if (session.get('property')):
-			prop = session['property']
-		if (session.get('room')):
-			room = session['room']
-
-		if (session.get('carryoverPPP')):
-			ppp = session['carryoverPPP']
-		if (session.get('carryoverPPM')):
-			ppm = session['carryoverPPM']
-		if (session.get('carryoverPPMImgs')):
-			ppmimg = session['carryoverPPMImgs']
-		if (session.get('carryoverPinP')):
-			pinp = session['carryoverPinP']
-
-		if (session.get('gdoc')):
-			gdoc = session['gdoc']
-
-		return render_template('descs.html',
-			carryoverPPP=ppp, carryoverPPM=ppm, carryoverPPMImgs=ppmimg, carryoverPinP=pinp,
-			region=reg, insula=ins, property=prop, room=room, gdoc=gdoc, arc = session['arc'])
-	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
-
-
-@app.route('/data') #Show carried over data
-def showCarryover():
-	if session.get('logged_in') and session["logged_in"]:
-
-		ppp = ppm = ppmimg = pinp = []
-		reg = ins = prop = room = ""
-
-		if (session.get('region')):
-			reg = session['region']
-		if (session.get('insula')):
-			ins = session['insula']
-		if (session.get('property')):
-			prop = session['property']
-		if (session.get('room')):
-			room = session['room']
-
-		if (session.get('carryoverPPPids')):
-			carryCur = mysql.connection.cursor()
-			inn = ', '.join(session['carryoverPPPids'])
-			carryQuery = "SELECT id, description FROM PPP WHERE uuid in (" + inn +") ;"
-			carryCur.execute(carryQuery)
-			dataList = carryCur.fetchall()
-			carryCur.close()
-			ppp, pppinds = dataTranslate(dataList)
-		if (session.get('carryoverPPMids')):
-			inn = ', '.join(session['carryoverPPMids'])
-			carryCur = mysql.connection.cursor()
-			carryQuery = "SELECT id, description, image_id FROM PPM WHERE id in (" + inn +") ;"
-			carryCur.execute(carryQuery)
-			dataList = carryCur.fetchall()
-			carryCur.close()
-			session['carryoverPPMImgs'] = []
-			for x in dataList:
-				session['carryoverPPMImgs'].append('"' + str(x[2]) + '"')
-			ppm, ppminds = dataTranslate(dataList)		
-		if (session.get('carryoverPinP')):
-			pp = session['carryoverPinP'].replace(",", ";").replace("\"", "").replace(" ", "")
-			pinp = pp.split(";")
-
-		return render_template('imgs.html',
-			pppdata=ppp, ppmdata=ppm, ppming=ppmimg, pinpdata = pinp,
-			region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
-	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
-
 @app.route('/carryover-button') #Carryover button found on multiple pages
 def carryover_button():
-	if (request.args.get('catextppp')):
-		strargs = request.args['catextppp'].replace("[", "").replace("]", "")
-		if (session.get('carryoverPPPids')):
-			session['carryoverPPPids'] += strargs.split(",")
-		else:
-			session['carryoverPPPids'] = strargs.split(",")
-		carryCur = mysql.connection.cursor()
-		carryQuery = "SELECT description, reviewed FROM PPP WHERE uuid in (" + strargs + ") ;"
-		carryCur.execute(carryQuery)
-		dataList = carryCur.fetchall()
-		carryCur.close()
-
-		dataCopy = ""
-		for d in dataList:
-			if d[1] == 1:
-				dataCopy += translate_client.translate(d[0], target_language="en", source_language="it")['translatedText'] + "; "
-
-		if (session.get('carryoverPPP')):
-			session['carryoverPPP'] += "; " + dataCopy
-		else:
-			session['carryoverPPP'] = dataCopy
-
 	if (request.args.get('catextppm')):
 		strargs = request.args['catextppm'].replace("[", "").replace("]", "")
 		if (session.get('carryoverPPMids')):
@@ -621,24 +390,19 @@ def carryover_button():
 		else:
 			session['carryoverPinP'] = request.args['catextpinp']
 
-	if (request.args.get('catextppp')):
+	if (request.args.get('catextppm')):
 		return redirect("/PPM")
 
-	if (request.args.get('catextppm')):
-		return redirect("/data")
-
 	if (request.args.get('catextpinp')):
-		return redirect("/PPP")
+		return redirect("/PinP")
 
-	return redirect("/data")
+	return redirect("/PinP")
 
 @app.route('/cleardata') #Start over, redirects to home page
 def clearData():
-	session['carryoverPPP'] = ""
 	session['carryoverPPM'] = ""
 	session['carryoverPPMImgs'] = []
 	session['carryoverPinP'] = ""
-	session['carryoverPPPids'] = []
 	session['carryoverPPMids'] = []
 	session['carryoverPPMImgsids'] = []
 
@@ -682,16 +446,6 @@ def saveData():
 			queryvars.append("")
 		if (session.get('room')):
 			queryvars.append(str(session['room']))
-		else:
-			queryvars.append("")
-
-		if (session.get('carryoverPPPids')):
-			queryvars.append(",".join(session['carryoverPPPids']))
-		else:
-			queryvars.append("")
-
-		if (session.get('carryoverPPP')):
-			queryvars.append(str(session['carryoverPPP']))
 		else:
 			queryvars.append("")
 

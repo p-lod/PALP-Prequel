@@ -31,19 +31,10 @@
             <nav>
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#">Pompeii in Pictures</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/PPP">PPP</a>
+                        <a class="nav-link active" href="/PinP">Pompeii in Pictures</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/PPM">PPM</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/data">Saved Data</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/descriptions">Descriptions</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/GIS">GIS Map</a>
@@ -70,8 +61,11 @@
                         <th scope="col">ID</th>
                         <th scope="col">Image</th>
                         <th scope="col">Description</th>
-                        <th scope="col">Already Used</th>
-                        <th scope="col">Select</th>
+                        <th scope="col">Is there art?</th>
+                        <th scope="col">Is there plaster?</th>
+                        <th scope="col">ARC being described</th>
+                        <th scope="col">Other related ARC numbers</th>
+                        <th scope="col">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,10 +74,43 @@
                             <td> {{row[0]}} </td>
                             <td> <a href="https://app.box.com/file/{{row[1]}}" target="_blank"><img class="img-fluid img-thumbnail" src="static/images/{{row[1]}}.jpg" alt=""></a> </td>
                             <td>{{row[2]}}</td>
-                            <td>{{"Yes" if row[3] else "No"}}</td>
-                            <td> 
+                            <td>
+                                {% if row[3] != "" %}
+                                    <p> Previously entered: {{row[3]}}</p>
+                                {% endif %}
                                 <form>
-                                    <input type="checkbox" class="form-control" name="{{row[1]}}" id="{{row[1]}}" >
+                                    <select name="{{row[1]}}-art" id="{{row[1]}}-art">
+                                      <option value="unknown">Unknown</option>
+                                      <option value="yes">Yes</option>
+                                      <option value="no">No</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                {% if row[4] != "" %}
+                                    <p> Previously entered: {{row[4]}}</p>
+                                {% endif %}
+                                <form>
+                                    <select name="{{row[1]}}-plaster" id="{{row[1]}}-plaster">
+                                      <option value="unknown">Unknown</option>
+                                      <option value="yes">Yes</option>
+                                      <option value="no">No</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="text" id="{{row[1]}}-ARC" name="{{row[1]}}-ARC" value={{row[5]}}>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="text" id="{{row[1]}}-others" name="{{row[1]}}-others" value={{row[6]}}>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <textarea id="{{row[1]}}-notes" name="{{row[1]}}-notes">{{row[7]}}</textarea>
                                 </form>
                             </td>
                         </tr>
