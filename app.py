@@ -58,12 +58,8 @@ def toRoman(data):
 
 @app.route("/") # Home page
 def index():
-	arc = ""
 
-	if (session.get('arc')):
-		arc = session['arc']
-
-	return render_template('index.html', arc=arc, error="")
+	return render_template('index.html', error="")
 
 @app.route("/login", methods=['POST']) # Login form
 def login():
@@ -76,43 +72,26 @@ def login():
 		session['logged_in'] = True
 	else:
 		error = 'Sorry, wrong password!'
-	return render_template('index.html', arc="", error=error)
+	return render_template('index.html', error=error)
 
 @app.route('/init', methods=['POST']) #Form submitted from home page
 def init():
-	arc = request.form['arc']
-	session['arc'] = arc
-
-	#Connect to Google Sheets
-	sheet = sheets_client.spreadsheets()
-	tracking_ws = "1F4nXX1QoyV1miaRUop2ctm8snDyov6GNu9aLt9t3a3M"
-	ranges = "Workflow_Tracking!A3:L87075"
-	gsheet = sheet.values().get(spreadsheetId=tracking_ws, range=ranges, majorDimension="COLUMNS").execute()
-	values = gsheet.get('values', [])
-
-	arclist = values[6] #Column G
-	if arc in arclist:
-		arcind = arclist.index(arc)
-		session['gdoc'] = values[10][arcind] #Column K
-		s = values[0][arcind]
-		s = re.sub("IX","9",s)
-		s = re.sub("IV","4",s)
-		s = re.sub("VIII","8",s)
-		s = re.sub("VII","7",s)
-		s = re.sub("VI","6",s)
-		s = re.sub("V","5",s)
-		s = re.sub("III","3",s)
-		s = re.sub("II","2",s)
-		s = re.sub("I","1",s)
-
-		session['region'] = s[0]
-		session['insula'] = s[1:3]
-		session['property'] = s[3:5]
-		session['room'] = s[5:]
-
+	if (request.form.get('region')):
+		session['region'] = request.form['region']
 	else:
-		return render_template('index.html', arc=arc, error="I'm sorry, that's an invalid ARC. Please try again.")
-
+		session['region'] = ""
+	if (request.form.get('insula')):
+		session['insula'] = request.form['insula']
+	else:
+		session['insula'] = ""
+	if (request.form.get('property')):
+		session['property'] = request.form['property']
+	else:
+		session['property'] = ""
+	if (request.form.get('room')):
+		session['room'] = request.form['room']
+	else:
+		session['room'] = ""
 	return redirect('/PinP')
 
 @app.route('/PPM') #PPM page
@@ -122,7 +101,7 @@ def showPPM():
 
 		#PPM data has individual location columns
 		ppmCur = mysql.connection.cursor()
-		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `description` ASC;"
+		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `description` ASC;"
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -228,10 +207,10 @@ def showPPM():
 
 		return render_template('PPM.html',
 			catextppm=ppm, catextppmimg=ppmimg, dbdata = data, indices = indices,
-			region=reg, insula=ins, property=prop, room=room, iframeurl = iframeurl, arc = session['arc'])
+			region=reg, insula=ins, property=prop, room=room, iframeurl = iframeurl)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
+		return render_template('index.html', error=error)
 	
 
 # When items are marked as reviewed, update database
@@ -318,10 +297,10 @@ def showPinP():
 
 		return render_template('PinP.html',
 			catextpinp=pinp, dbdata = data, indices = indices,
-			region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
+			region=reg, insula=ins, property=prop, room=room)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
+		return render_template('index.html', error=error)
 	
 @app.route('/help') #Help page - the info here is in the HTML
 def help():
@@ -337,7 +316,7 @@ def help():
 		room = session['room']
 
 	return render_template('help.html',
-		region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
+		region=reg, insula=ins, property=prop, room=room)
 
 @app.route('/GIS') #Embedded GIS map
 def GIS():
@@ -353,7 +332,7 @@ def GIS():
 		room = session['room']
 
 	return render_template('GIS.html',
-		region=reg, insula=ins, property=prop, room=room, arc = session['arc'])
+		region=reg, insula=ins, property=prop, room=room)
 
 @app.route('/carryover-button') #Carryover button found on multiple pages
 def carryover_button():
@@ -406,7 +385,6 @@ def clearData():
 	session['carryoverPPMids'] = []
 	session['carryoverPPMImgsids'] = []
 
-	session['arc'] = ""
 	session['region'] = ""
 	session['insula'] = ""
 	session['property'] = ""
@@ -431,7 +409,6 @@ def saveData():
 		now = datetime.now()
 		timestamp = now.strftime("%m/%d/%Y, %H:%M:%S")
 		queryvars = [timestamp]
-		queryvars.append(session['arc'])
 		if (session.get('region')):
 			queryvars.append(str(session['region']))
 		else:
@@ -480,7 +457,7 @@ def saveData():
 		return redirect(request.referrer)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', arc="", error=error)
+		return render_template('index.html', error=error)
 
 @app.route('/search', methods=['POST']) #Search bar at top of pages
 def search():

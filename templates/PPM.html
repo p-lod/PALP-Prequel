@@ -2,7 +2,7 @@
 <html lang="en">
  
 <head>
-    <title>PPM - PALP Workspace</title>
+    <title>PPM - PALP Prequel</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -14,7 +14,7 @@
  
     <div class="container">
         <div class="header">
-            <h1> PALP Workspace - {{arc}}  </h1>
+            <h1> PALP Prequel </h1>
             <form action="/search" method="POST">
                 <label>Working on: </label>
                 <label for="region"> Region </label>
@@ -42,66 +42,94 @@
                         <a class="nav-link" href="/help">Help</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Change ARC</a>
+                        <a class="nav-link" href="/">Change Location</a>
                     </li>
                 </ul>
             </nav>
         </div>
-        <div class="row" style="margin-top: 1em;">
-<!--             <div class="col-4">
-                <iframe src="{{iframeurl}}" height="500" frameborder="0" allowfullscreen webkitallowfullscreen msallowfullscreen></iframe>
-            </div> -->
-            <div class="col" id="data-table">
-                <div class="row">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th scope="col">Location</th>
-                                <th scope="col">Image</th>
-                                <th scope="col">Italian</th>
-                                <th scope="col">English</th>
-                                <th scope="col">Select</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in dbdata %}
-                                <tr>
-                                    <td>{{row[3]}} {{row[4]}} {{row[5]}} {{row[6]}}</td>
-                                    <td width="30%"><a href="https://app.box.com/file/{{row[8]}}" class="d-block mb-4 h-100" target="_blank">
-                                        <img class="img-fluid img-thumbnail" src="static/images/{{row[8]}}.jpg" alt="">
-                                    </a></td>
-                                    <td>{{row[1]}}</td>
-                                    <td>{{row[7]}}</td>
-                                    <td> 
-                                        <form>
-                                            <input type="checkbox" class="form-control" name="{{row[0]}}" id="{{row[0]}}" >
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <p> Do all of the Italian descriptions look good? <br/>
-                        <a href="/ppm-reviewed?data={{indices}}" class="btn btn-outline-success">Yes, mark as reviewed </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                        <button class="btn btn-outline-danger" id="edit">No, open editing </button>
-                        <br/><br/>
-                        <button class="btn btn-outline-primary" id="copy">Copy selected English descriptions </button>
-                        <br/> Note: only descriptions that have been marked as reviewed will copy over.
-                    </p>
-                </div>
-                <div class="row">
-                    <p><strong> Copied data: </strong></p><br/>
-                    <div id="catextppm" class="textarea-noedit" name="catextppm">{{ catextppm }} </div>
-                </div>
-            </div>
+        <div class="row">
+            <table class="table table-bordered">
+                <colgroup>
+                    <col>
+                    <col width="50%">
+                    <col>
+                    <col width="5%">
+                    <col width="5%">
+                    <col width="5%">
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Location</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Is there art?</th>
+                        <th scope="col">Is there plaster?</th>
+                        <th scope="col">ARC being described</th>
+                        <th scope="col">Other related ARC numbers</th>
+                        <th scope="col">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dbdata %}
+                        <tr>
+                            <td>{{row[3]}} {{row[4]}} {{row[5]}} {{row[6]}}</td>
+                            <td width="30%"><a href="https://app.box.com/file/{{row[13]}}" class="d-block mb-4 h-100" target="_blank">
+                                <img class="img-fluid img-thumbnail" src="static/images/{{row[13]}}.jpg" alt="">
+                            </a></td>
+                            <td>{{row[7]}}</td>
+                            <td>
+                                {% if row[8] != "" %}
+                                    <p> Previously entered: {{row[8]}}</p>
+                                {% endif %}
+                                <form>
+                                    <select name="{{row[13]}}-art" id="{{row[13]}}-art">
+                                      <option value=""></option>
+                                      <option value="unknown">Unknown</option>
+                                      <option value="yes">Yes</option>
+                                      <option value="no">No</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                {% if row[9] != "" %}
+                                    <p> Previously entered: {{row[9]}}</p>
+                                {% endif %}
+                                <form>
+                                    <select name="{{row[13]}}-plaster" id="{{row[13]}}-plaster">
+                                      <option value=""></option>
+                                      <option value="unknown">Unknown</option>
+                                      <option value="yes">Yes</option>
+                                      <option value="no">No</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="text" size="10" id="{{row[13]}}-ARC" name="{{row[13]}}-ARC" value={{row[10]}}>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="text" size="10" id="{{row[13]}}-others" name="{{row[13]}}-others" value={{row[11]}}>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <textarea id="{{row[13]}}-notes" name="{{row[13]}}-notes">{{row[12]}}</textarea>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+         <div class="fixed-top row justify-content-end" style="margin-right: 10%;">
+            <button class="btn btn-success" style="margin-top: 1em; padding: 1.5rem 1.5rem;" id="Save">Save data</button>
         </div>
     </div>
     <script type="text/javascript">
-        $("#edit").click(function(){
-            $("#data-table").replaceWith(function(){
-                return '<div class="col" id="data-edit-table"><form action="/update-ppm" method="POST"><table class="table table-bordered" ><thead><tr><th scope="col">Location</th><th scope="col">Italian</th></tr></thead><tbody>{% for row in dbdata %}<tr><td>{{row[4]}} {{row[5]}} {{row[6]}} {{row[7]}}</td><td><textarea id="{{row[0]}}" class="form-control" name="{{row[0]}}">{{row[2] | replace("\n", " ") | replace("\r", " ")}}</textarea></td></tr>{% endfor %}</tbody></table><input type="submit" class="btn btn-outline-success" value="Submit changes"></form></div>';
-            });
-        });
         $("#copy").click(function(){
             var i = [];
             $('input[type=checkbox]').each(function () {
