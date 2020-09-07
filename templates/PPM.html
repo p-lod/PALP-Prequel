@@ -30,10 +30,10 @@
             <nav>
                 <ul class="nav nav-tabs">
                     <li class="nav-item">
-                        <a class="nav-link" href="/PinP">Pompeii in Pictures</a>
+                        <a class="nav-link active" href="/PPM">PPM</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="/PPM">PPM</a>
+                        <a class="nav-link" href="/PinP">Pompeii in Pictures</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/GIS">GIS Map</a>
@@ -52,7 +52,7 @@
                 <colgroup>
                     <col>
                     <col width="50%">
-                    <col>
+                    <col width="50%">
                     <col width="5%">
                     <col width="5%">
                     <col width="5%">
@@ -64,10 +64,10 @@
                         <th scope="col">Location</th>
                         <th scope="col">Image</th>
                         <th scope="col">Description</th>
+                        <th scope="col">Primary ARC</th>
+                        <th scope="col">Additional ARC numbers</th>
                         <th scope="col">Is there art?</th>
                         <th scope="col">Is there plaster?</th>
-                        <th scope="col">ARC being described</th>
-                        <th scope="col">Other related ARC numbers</th>
                         <th scope="col">Notes</th>
                     </tr>
                 </thead>
@@ -80,44 +80,62 @@
                             </a></td>
                             <td>{{row[7]}}</td>
                             <td>
-                                {% if row[8] != "" %}
-                                    <p> Previously entered: {{row[8]}}</p>
-                                {% endif %}
                                 <form>
-                                    <select name="{{row[13]}}-art" id="{{row[13]}}-art">
-                                      <option value=""></option>
-                                      <option value="unknown">Unknown</option>
-                                      <option value="yes">Yes</option>
-                                      <option value="no">No</option>
-                                    </select>
-                                </form>
-                            </td>
-                            <td>
-                                {% if row[9] != "" %}
-                                    <p> Previously entered: {{row[9]}}</p>
-                                {% endif %}
-                                <form>
-                                    <select name="{{row[13]}}-plaster" id="{{row[13]}}-plaster">
-                                      <option value=""></option>
-                                      <option value="unknown">Unknown</option>
-                                      <option value="yes">Yes</option>
-                                      <option value="no">No</option>
-                                    </select>
+                                    <input type="text" size="10" id="{{row[0]}}-ARC" name="{{row[0]}}-ARC" value={{row[10]}}>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="text" size="10" id="{{row[13]}}-ARC" name="{{row[13]}}-ARC" value={{row[10]}}>
+                                    <textarea id="{{row[0]}}-others" name="{{row[0]}}-others"> {{row[11]}} </textarea>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="text" size="10" id="{{row[13]}}-others" name="{{row[13]}}-others" value={{row[11]}}>
+                                    <input type="radio" id="no" name="{{row[0]}}-art" value="no"
+                                        {% if row[8] == "no" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="no">No</label>
+                                    <input type="radio" id="yes" name="{{row[0]}}-art" value="yes"
+                                        {% if row[8] == "yes" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="yes">Yes</label><br>
+                                    <input type="radio" id="maybe" name="{{row[0]}}-art" value="maybe" 
+                                        {% if row[8] == "maybe" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="maybe">Maybe</label><br>                                    
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[13]}}-notes" name="{{row[13]}}-notes">{{row[12]}}</textarea>
+                                    <input type="radio" id="no" name="{{row[0]}}-plaster" value="no"
+                                        {% if row[9] == "no" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="no">No</label>
+                                    <input type="radio" id="yes" name="{{row[0]}}-plaster" value="yes"
+                                        {% if row[9] == "yes" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="yes">Yes</label><br>
+                                    <input type="radio" id="maybe" name="{{row[0]}}-plaster" value="maybe" 
+                                        {% if row[9] == "maybe" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="maybe">Maybe</label><br>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <textarea id="{{row[0]}}-notes" name="{{row[0]}}-notes">{{row[12]}}</textarea>
                                 </form>
                             </td>
                         </tr>
@@ -130,14 +148,16 @@
         </div>
     </div>
     <script type="text/javascript">
-        $("#copy").click(function(){
-            var i = [];
-            $('input[type=checkbox]').each(function () {
-               if (this.checked) {
-                   i.push('"' + this.id + '"');
-               }
+        $("#Save").click(function(){
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("POST", "save-button", true);
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            var i = "";
+            $('form').each(function () {
+                console.log($(this).serialize());
+                i = i + "&" + $(this).serialize().toString();
             });
-            window.location = "/carryover-button?catextppm=" + i;
+            xhttp.send("saveppm=1&" + i);
         });
     </script>
 </body>

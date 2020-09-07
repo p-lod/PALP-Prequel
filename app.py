@@ -92,7 +92,7 @@ def init():
 		session['room'] = request.form['room']
 	else:
 		session['room'] = ""
-	return redirect('/PinP')
+	return redirect('/PPM')
 
 @app.route('/PPM') #PPM page
 def showPPM():
@@ -211,33 +211,6 @@ def showPPM():
 	else:
 		error= "Sorry, this page is only accessible by logging in."
 		return render_template('index.html', error=error)
-	
-
-# When items are marked as reviewed, update database
-@app.route('/ppm-reviewed') 
-def ppmReviewed():
-	strargs = request.args['data'].replace("[", "").replace("]", "")
-	ppmCur = mysql.connection.cursor()
-	ppmQuery = "UPDATE PPM SET reviewed=1 WHERE id in (" + strargs + ") ;"
-	ppmCur.execute(ppmQuery)
-	mysql.connection.commit()
-	ppmCur.close()
-
-	return redirect('/PPM')
-
-@app.route('/update-ppm', methods=['POST'])
-def updatePPM():
-	ppmCur = mysql.connection.cursor()
-	dictargs = request.form.to_dict()
-	for k in dictargs:
-		krem =  dictargs[k].replace('\n', ' ').replace('\r', ' ').replace('\'', "\\'")
-		ppmQuery = "UPDATE PPM SET `description` = '" + krem + "' WHERE id = " + k + ";"
-		print(ppmQuery)
-		ppmCur.execute(ppmQuery)
-	mysql.connection.commit()
-	ppmCur.close()
-
-	return redirect('/PPM')
 
 @app.route('/PinP') #PinP page
 def showPinP():
@@ -248,7 +221,7 @@ def showPinP():
 		pinpCur = mysql.connection.cursor()
 
 		#Join tbl_webpage_images and tbl_box_images on id
-		pinpQuery = "SELECT `archive_id`, `id_box_file`, `img_alt`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
+		pinpQuery = "SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -295,9 +268,13 @@ def showPinP():
 		if (session.get('room')):
 			room = session['room']
 
+		ex = ""
+		if session.get('ex'):
+			ex = session['ex']
+
 		return render_template('PinP.html',
 			catextpinp=pinp, dbdata = data, indices = indices,
-			region=reg, insula=ins, property=prop, room=room)
+			region=reg, insula=ins, property=prop, room=room, ex=ex)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
 		return render_template('index.html', error=error)
@@ -334,48 +311,56 @@ def GIS():
 	return render_template('GIS.html',
 		region=reg, insula=ins, property=prop, room=room)
 
-@app.route('/carryover-button') #Carryover button found on multiple pages
-def carryover_button():
-	if (request.args.get('catextppm')):
-		strargs = request.args['catextppm'].replace("[", "").replace("]", "")
-		if (session.get('carryoverPPMids')):
-			session['carryoverPPMids'] += strargs.split(",")
-		else:
-			session['carryoverPPMids'] = strargs.split(",")
-		carryCur = mysql.connection.cursor()
-		carryQuery = "SELECT description, reviewed FROM PPM WHERE id in (" + strargs + ") ;"
-		carryCur.execute(carryQuery)
-		dataList = carryCur.fetchall()
-		carryCur.close()
-
-		dataCopy = ""
-		for d in dataList:
-			if d[1] == 1:
-				dataCopy += translate_client.translate(d[0], target_language="en", source_language="it")['translatedText'] + "; "
-
-		if (session.get('carryoverPPM')):
-			session['carryoverPPM'] += "; " + dataCopy
-		else:
-			session['carryoverPPM'] = dataCopy
-
-	if (request.args.get('catextpinp')):
+@app.route('/save-button', methods=["POST", "GET"]) #Save button found on PinP and PPM pages
+def save_button():
+	if (request.form.get('savepinp')):
 		pinpCur = mysql.connection.cursor()
-		pinpQuery = 'UPDATE `PinP` SET `already_used` = 1 where `id_box_file` in (' + request.args['catextpinp'] +');'
-		pinpCur.execute(pinpQuery)
+		for k, v in request.form.items():
+			if v != "":
+				ksplit = k.split("-")
+				if len(ksplit) > 1:
+					if ksplit[1] == "art":
+						pinpQuery = 'UPDATE `PinP` SET `is_art` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpCur.execute(pinpQuery)
+					elif ksplit[1] == "plaster":
+						pinpQuery = 'UPDATE `PinP` SET `is_plaster` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpCur.execute(pinpQuery)
+					elif ksplit[1] == "ARC":
+						pinpQuery = 'UPDATE `PinP` SET `ARC` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpCur.execute(pinpQuery)
+					elif ksplit[1] == "others":
+						pinpQuery = 'UPDATE `PinP` SET `other_ARC` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpCur.execute(pinpQuery)
+					elif ksplit[1] == "notes":
+						pinpQuery = 'UPDATE `PinP` SET `notes` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
-		if (session.get('carryoverPinP')):
-			session['carryoverPinP'] += "; " + request.args['catextpinp']
-		else:
-			session['carryoverPinP'] = request.args['catextpinp']
+	if (request.form.get('saveppm')):
+		ppmCur = mysql.connection.cursor()
+		for k, v in request.form.items():
+			if v != "":
+				ksplit = k.split("-")
+				if len(ksplit) > 1:
+					if ksplit[1] == "art":
+						ppmQuery = 'UPDATE `PPM` SET `is_art` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmCur.execute(ppmQuery)
+					elif ksplit[1] == "plaster":
+						ppmQuery = 'UPDATE `PPM` SET `is_plaster` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmCur.execute(ppmQuery)
+					elif ksplit[1] == "ARC":
+						ppmQuery = 'UPDATE `PPM` SET `ARC` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmCur.execute(ppmQuery)
+					elif ksplit[1] == "others":
+						ppmQuery = 'UPDATE `PPM` SET `other_ARC` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmCur.execute(ppmQuery)
+					elif ksplit[1] == "notes":
+						ppmQuery = 'UPDATE `PPM` SET `notes` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmCur.execute(ppmQuery)
+		mysql.connection.commit()
+		ppmCur.close()
 
-	if (request.args.get('catextppm')):
-		return redirect("/PPM")
-
-	if (request.args.get('catextpinp')):
-		return redirect("/PinP")
-
-	return redirect("/PinP")
+	return redirect(request.referrer)
 
 @app.route('/cleardata') #Start over, redirects to home page
 def clearData():
