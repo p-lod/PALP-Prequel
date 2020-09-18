@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.js"></script>
     <script src="{{ url_for('static', filename='js/store.everything.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.resizableColumns.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/bootstrap-table-master/extensions/resizable/bootstrap-table-resizable.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-table-master/src/extensions/resizable/bootstrap-table-resizable.js') }}"></script>
 </head>
  
 <body>
@@ -95,46 +95,50 @@
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no" name="{{row[1]}}-art" value="no"
+                                    <input type="radio" id="no1{{row[1]}}" name="{{row[1]}}-art" value="no"
                                         {% if row[3] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no">No</label>
-                                    <input type="radio" id="yes" name="{{row[1]}}-art" value="yes"
+                                    <label for="no1{{row[1]}}">No</label>
+                                    <br/>
+                                    <input type="radio" id="yes1{{row[1]}}" name="{{row[1]}}-art" value="yes"
                                         {% if row[3] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes">Yes</label><br>
-                                    <input type="radio" id="maybe" name="{{row[1]}}-art" value="maybe" 
+                                    <label for="yes1{{row[1]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" id="maybe1{{row[1]}}" name="{{row[1]}}-art" value="maybe" 
                                         {% if row[3] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe">Maybe</label><br>
+                                    <label for="maybe1{{row[1]}}">Maybe</label><br>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no" name="{{row[1]}}-plaster" value="no"
+                                    <input type="radio" id="no{{row[1]}}" name="{{row[1]}}-plaster" value="no"
                                         {% if row[4] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no">No</label>
-                                    <input type="radio" id="yes" name="{{row[1]}}-plaster" value="yes"
+                                    <label for="no{{row[1]}}">No</label>
+                                    <br/>
+                                    <input type="radio" id="yes{{row[1]}}" name="{{row[1]}}-plaster" value="yes"
                                         {% if row[4] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes">Yes</label><br>
-                                    <input type="radio" id="maybe" name="{{row[1]}}-plaster" value="maybe" 
+                                    <label for="yes{{row[1]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" id="maybe{{row[1]}}" name="{{row[1]}}-plaster" value="maybe" 
                                         {% if row[4] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe">Maybe</label><br>
+                                    <label for="maybe{{row[1]}}">Maybe</label><br>
                                 </form>
                             </td>
                             <td>

@@ -91,46 +91,50 @@
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no" name="{{row[0]}}-art" value="no"
+                                    <input type="radio" id="no{{row[0]}}" name="{{row[0]}}-art" value="no"
                                         {% if row[8] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no">No</label>
-                                    <input type="radio" id="yes" name="{{row[0]}}-art" value="yes"
+                                    <label for="no{{row[0]}}">No</label>
+                                    <br/>
+                                    <input type="radio" id="yes{{row[0]}}" name="{{row[0]}}-art" value="yes"
                                         {% if row[8] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes">Yes</label><br>
-                                    <input type="radio" id="maybe" name="{{row[0]}}-art" value="maybe" 
+                                    <label for="yes{{row[0]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" id="maybe{{row[0]}}" name="{{row[0]}}-art" value="maybe" 
                                         {% if row[8] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe">Maybe</label><br>                                    
+                                    <label for="maybe{{row[0]}}">Maybe</label><br>                                    
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no" name="{{row[0]}}-plaster" value="no"
+                                    <input type="radio" id="no2{{row[0]}}" name="{{row[0]}}-plaster" value="no"
                                         {% if row[9] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no">No</label>
-                                    <input type="radio" id="yes" name="{{row[0]}}-plaster" value="yes"
+                                    <label for="no2{{row[0]}}">No</label>
+                                    <br/>
+                                    <input type="radio" id="yes2{{row[0]}}" name="{{row[0]}}-plaster" value="yes"
                                         {% if row[9] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes">Yes</label><br>
-                                    <input type="radio" id="maybe" name="{{row[0]}}-plaster" value="maybe" 
+                                    <label for="yes2{{row[0]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" id="maybe2{{row[0]}}" name="{{row[0]}}-plaster" value="maybe" 
                                         {% if row[9] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe">Maybe</label><br>
+                                    <label for="maybe2{{row[0]}}">Maybe</label><br>
                                 </form>
                             </td>
                             <td>

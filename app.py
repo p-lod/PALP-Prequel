@@ -46,6 +46,8 @@ box_auth = boxsdk.JWTAuth(
 box_access_token = box_auth.authenticate_instance()
 box_client = boxsdk.Client(box_auth)
 
+workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU"
+
 #Roman numeral utility
 def toRoman(data):
 	romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"]
@@ -56,9 +58,61 @@ def toRoman(data):
 		romreg = data
 	return romreg
 
+def toWorkspaceSheet():
+	cur = mysql.connection.cursor()
+	PPMQuery = "SELECT `ARC`, `is_art`, `is_plaster`,`other_ARC`, `notes` FROM `PPM`"
+	cur.execute(PPMQuery)
+
+	PinPQuery = "SELECT `ARC`, `is_art`, `is_plaster`, `other_ARC`, `notes` FROM `PinP`"
+	cur.execute(PinPQuery)
+	data = cur.fetchall()
+	cur.close()
+
+	arclist = {}
+	dataNotTuple = []
+	for d in data:
+		if d[0] != "":
+			arclist[d[0]] = {"art": "", "plaster": "", "other_notes": ""}
+			dataNotTuple.append([d[0], d[1], d[2], d[3], d[4]])
+	for x in dataNotTuple:
+		if "art" in arclist[x[0]]:
+			if arclist[x[0]]["art"] != "yes":
+				arclist[x[0]]["art"] = x[1]
+		else:
+			arclist[x[0]]["art"] = x[1]
+
+		if "plaster" in arclist[x[0]]:
+			if arclist[x[0]]["plaster"] != "yes":
+				arclist[x[0]]["plaster"] = x[2]
+		else:
+			arclist[x[0]]["plaster"] = x[2]
+		arclist[x[0]]["other_notes"] += ", " + x[4]
+	print(arclist)
+
+	sheet = sheets_client.spreadsheets()
+	ranges = "Workflow_Tracking!A1:V87077"
+	gsheet = sheet.values().get(spreadsheetId=workflow_tracker_id, range="Workflow_Tracking!A1:V87077").execute()
+	values = gsheet.get('values', [])
+	toupdate = {}
+	for gindex in range(len(values)):
+		g = values[gindex]
+		if g[6] in arclist:
+			print(g[6])
+			print(arclist[g[6]])
+			print(g)
+			g[11] = arclist[g[6]]["art"]
+			g[12] = arclist[g[6]]["plaster"]
+			g[16] = arclist[g[6]]["other_notes"]
+			toupdate[gindex] = g
+	for k in toupdate:
+		rangenum = "Workflow_Tracking!H"+str(k) + ":V" + str(k)
+		print(rangenum)
+		valuerangebody = {"range": rangenum, "majorDimension": "ROWS", "values": [toupdate[k][7:]]}
+		updaterequest = sheet.values().update(spreadsheetId=workflow_tracker_id, range=rangenum, body=valuerangebody, valueInputOption="RAW").execute()
+
 @app.route("/") # Home page
 def index():
-
+	#data = toWorkspaceSheet()
 	return render_template('index.html', error="")
 
 @app.route("/login", methods=['POST']) # Login form
