@@ -23,10 +23,8 @@ with open('mysql.cfg', 'r') as mysql_cfg:
 	app.config['MYSQL_HOST'] = mysql_cfg_lines[3]
 mysql = MySQL(app)
 
-#Google Translate credentials
-tr_credentials = service_account.Credentials.from_service_account_file("My Project-1f2512d178cb.json")
-
 #Google Sheets credentials
+tr_credentials = service_account.Credentials.from_service_account_file("My Project-1f2512d178cb.json")
 scopes = ['https://www.googleapis.com/auth/spreadsheets']
 scoped_gs = tr_credentials.with_scopes(scopes)
 sheets_client = build('sheets', 'v4', credentials=scoped_gs)
@@ -46,7 +44,7 @@ box_auth = boxsdk.JWTAuth(
 box_access_token = box_auth.authenticate_instance()
 box_client = boxsdk.Client(box_auth)
 
-workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU"
+workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU" #my copy so I don't mess things up
 
 #Roman numeral utility
 def toRoman(data):
@@ -58,6 +56,7 @@ def toRoman(data):
 		romreg = data
 	return romreg
 
+#Currently not being used: will be a background task
 def toWorkspaceSheet():
 	cur = mysql.connection.cursor()
 	PPMQuery = "SELECT `ARC`, `is_art`, `is_plaster`,`other_ARC`, `notes` FROM `PPM`"
@@ -218,35 +217,15 @@ def showPPM():
 		for x in range(len(data)):
 			data[x].append(imgs[x])
 		 	
-		# 	imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
-		# 	ppmCur.execute(imgQuery, [imgs[x], j[0]])
-		# 	mysql.connection.commit()
+		imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
+		print(imgQuery)
+		ppmCur.execute(imgQuery, [imgs[x], data[x][0]])
+		mysql.connection.commit()
 		
 		ppmCur.close()
 
-		ppm = ppmimg = reg = ins = prop = room = iframeurl = ""
+		ppm = ppmimg = reg = ins = prop = room = ""
 
-		#each region (theoretically) has its own PDF doc
-		if (session.get('region')):
-			reg = session['region']
-			if session['region'] == "1":
-				iframeurl = ""
-			if session['region'] == "2":
-				iframeurl = ""
-			if session['region'] == "3":
-				iframeurl = ""
-			if session['region'] == "4":
-				iframeurl = ""
-			if session['region'] == "5":
-				iframeurl = ""
-			if session['region'] == "6":
-				iframeurl = ""
-			if session['region'] == "7":
-				iframeurl = ""
-			if session['region'] == "8":
-				iframeurl = ""
-			if session['region'] == "9":
-				iframeurl = ""
 		if (session.get('insula')):
 			ins = session['insula']
 		if (session.get('property')):
@@ -261,7 +240,7 @@ def showPPM():
 
 		return render_template('PPM.html',
 			catextppm=ppm, catextppmimg=ppmimg, dbdata = data, indices = indices,
-			region=reg, insula=ins, property=prop, room=room, iframeurl = iframeurl)
+			region=reg, insula=ins, property=prop, room=room)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
 		return render_template('index.html', error=error)
@@ -322,13 +301,9 @@ def showPinP():
 		if (session.get('room')):
 			room = session['room']
 
-		ex = ""
-		if session.get('ex'):
-			ex = session['ex']
-
 		return render_template('PinP.html',
 			catextpinp=pinp, dbdata = data, indices = indices,
-			region=reg, insula=ins, property=prop, room=room, ex=ex)
+			region=reg, insula=ins, property=prop, room=room)
 	else:
 		error= "Sorry, this page is only accessible by logging in."
 		return render_template('index.html', error=error)
@@ -415,88 +390,6 @@ def save_button():
 		ppmCur.close()
 
 	return redirect(request.referrer)
-
-@app.route('/cleardata') #Start over, redirects to home page
-def clearData():
-	session['carryoverPPM'] = ""
-	session['carryoverPPMImgs'] = []
-	session['carryoverPinP'] = ""
-	session['carryoverPPMids'] = []
-	session['carryoverPPMImgsids'] = []
-
-	session['region'] = ""
-	session['insula'] = ""
-	session['property'] = ""
-	session['room'] = ""
-
-	session['gdoc'] = ""
-
-	files = glob.glob('static/images/*')
-	for f in files:
-		try:
-			os.remove(f)
-		except OSError as e:
-			print("Error: %s : %s" % (f, e.strerror))
-
-	return render_template('index.html')
-
-@app.route('/savedata') #Copy saved data to Google Sheets
-def saveData():
-
-	if session.get('logged_in') and session["logged_in"]:
-
-		now = datetime.now()
-		timestamp = now.strftime("%m/%d/%Y, %H:%M:%S")
-		queryvars = [timestamp]
-		if (session.get('region')):
-			queryvars.append(str(session['region']))
-		else:
-			queryvars.append("")
-		if (session.get('insula')):
-			queryvars.append(str(session['insula']))
-		else:
-			queryvars.append("")
-		if (session.get('property')):
-			queryvars.append(str(session['property']))
-		else:
-			queryvars.append("")
-		if (session.get('room')):
-			queryvars.append(str(session['room']))
-		else:
-			queryvars.append("")
-
-		if (session.get('carryoverPPMids')):
-			queryvars.append(",".join(session['carryoverPPMids']))
-		else:
-			queryvars.append("")
-
-		if (session.get('carryoverPPM')):
-			queryvars.append(str(session['carryoverPPM']))
-		else:
-			queryvars.append("")
-
-
-		if (session.get('carryoverPPMImgs')):
-			queryvars.append(",".join(session['carryoverPPMImgs']))
-		else:
-			queryvars.append("")
-		if (session.get('carryoverPinP')):
-			queryvars.append(str(session['carryoverPinP']))
-		else:
-			queryvars.append("")
-
-		values = [queryvars]
-		print(values)
-		body = {
-		    'values': values
-		}
-
-		result = sheets_client.spreadsheets().values().append(spreadsheetId="1HaKXGdS-ZS42HiK8d1KeeSdC199MdxyP42QqsUlzZBQ",range="Sheet1", valueInputOption="USER_ENTERED", insertDataOption="INSERT_ROWS", body=body).execute()
-
-		return redirect(request.referrer)
-	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', error=error)
 
 @app.route('/search', methods=['POST']) #Search bar at top of pages
 def search():
