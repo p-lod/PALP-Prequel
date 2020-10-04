@@ -85,31 +85,31 @@
                             <td>{{row[2]}}</td>
                             <td>
                                 <form>
-                                    <input type="text" size="10" id="{{row[1]}}-ARC" name="{{row[1]}}-ARC" value={{row[5]}}>
+                                    <input type="text" onchange="savedata()" size="10" id="{{row[1]}}-ARC" name="{{row[1]}}-ARC" value={{row[5]}}>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[1]}}-others" name="{{row[1]}}-others">{{row[6]}}</textarea>
+                                    <textarea id="{{row[1]}}-others" onchange="savedata()" name="{{row[1]}}-others">{{row[6]}}</textarea>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no1{{row[1]}}" name="{{row[1]}}-art" value="no"
+                                    <input type="radio" onclick="savedata()" id="no1{{row[1]}}" name="{{row[1]}}-art" value="no"
                                         {% if row[3] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="no1{{row[1]}}">No</label>
                                     <br/>
-                                    <input type="radio" id="yes1{{row[1]}}" name="{{row[1]}}-art" value="yes"
+                                    <input type="radio" onclick="savedata()" id="yes1{{row[1]}}" name="{{row[1]}}-art" value="yes"
                                         {% if row[3] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="yes1{{row[1]}}">Yes</label><br>
                                     <br/>
-                                    <input type="radio" id="maybe1{{row[1]}}" name="{{row[1]}}-art" value="maybe" 
+                                    <input type="radio" onclick="savedata()" id="maybe1{{row[1]}}" name="{{row[1]}}-art" value="maybe" 
                                         {% if row[3] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
@@ -119,21 +119,21 @@
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" id="no{{row[1]}}" name="{{row[1]}}-plaster" value="no"
+                                    <input type="radio" onclick="savedata()" id="no{{row[1]}}" name="{{row[1]}}-plaster" value="no"
                                         {% if row[4] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="no{{row[1]}}">No</label>
                                     <br/>
-                                    <input type="radio" id="yes{{row[1]}}" name="{{row[1]}}-plaster" value="yes"
+                                    <input type="radio" onclick="savedata()" id="yes{{row[1]}}" name="{{row[1]}}-plaster" value="yes"
                                         {% if row[4] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="yes{{row[1]}}">Yes</label><br>
                                     <br/>
-                                    <input type="radio" id="maybe{{row[1]}}" name="{{row[1]}}-plaster" value="maybe" 
+                                    <input type="radio" onclick="savedata()" id="maybe{{row[1]}}" name="{{row[1]}}-plaster" value="maybe" 
                                         {% if row[4] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
@@ -143,7 +143,7 @@
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[1]}}-notes" name="{{row[1]}}-notes">{{row[7]}}</textarea>
+                                    <textarea id="{{row[1]}}-notes" onchange="savedata()" name="{{row[1]}}-notes">{{row[7]}}</textarea>
                                 </form>
                             </td>
                         </tr>
@@ -156,17 +156,17 @@
         </div>
     </div>
     <script type="text/javascript">
-        $("#Save").click(function(){
+        function savedata(){
             var xhttp = new XMLHttpRequest();
             xhttp.open("POST", "save-button", true);
             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             var i = "";
             $('form').each(function () {
-                console.log($(this).serialize());
                 i = i + "&" + $(this).serialize().toString();
             });
             xhttp.send("savepinp=1&" + i);
-        });
+        }
+        $("#Save").click(savedata);
     </script>
 </body>
  
