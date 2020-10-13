@@ -85,65 +85,65 @@
                             <td>{{row[2]}}</td>
                             <td>
                                 <form>
-                                    <input type="text" onchange="savedata()" size="10" id="{{row[1]}}-ARC" name="{{row[1]}}-ARC" value={{row[5]}}>
+                                    <input type="text" onchange="savedata()" size="10" id="{{row[0]}}-ARC" name="{{row[0]}}-ARC" value={{row[5]}}>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[1]}}-others" onchange="savedata()" name="{{row[1]}}-others">{{row[6]}}</textarea>
+                                    <textarea id="{{row[0]}}-others" onchange="savedata()" name="{{row[0]}}-others">{{row[6]}}</textarea>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" onclick="savedata()" id="no1{{row[1]}}" name="{{row[1]}}-art" value="no"
+                                    <input type="radio" onclick="savedata()" id="no1{{row[0]}}" name="{{row[0]}}-art" value="no"
                                         {% if row[3] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no1{{row[1]}}">No</label>
+                                    <label for="no1{{row[0]}}">No</label>
                                     <br/>
-                                    <input type="radio" onclick="savedata()" id="yes1{{row[1]}}" name="{{row[1]}}-art" value="yes"
+                                    <input type="radio" onclick="savedata()" id="yes1{{row[0]}}" name="{{row[0]}}-art" value="yes"
                                         {% if row[3] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes1{{row[1]}}">Yes</label><br>
+                                    <label for="yes1{{row[0]}}">Yes</label><br>
                                     <br/>
-                                    <input type="radio" onclick="savedata()" id="maybe1{{row[1]}}" name="{{row[1]}}-art" value="maybe" 
+                                    <input type="radio" onclick="savedata()" id="maybe1{{row[0]}}" name="{{row[0]}}-art" value="maybe" 
                                         {% if row[3] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe1{{row[1]}}">Maybe</label><br>
+                                    <label for="maybe1{{row[0]}}">Maybe</label><br>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <input type="radio" onclick="savedata()" id="no{{row[1]}}" name="{{row[1]}}-plaster" value="no"
+                                    <input type="radio" onclick="savedata()" id="no{{row[0]}}" name="{{row[0]}}-plaster" value="no"
                                         {% if row[4] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="no{{row[1]}}">No</label>
+                                    <label for="no{{row[0]}}">No</label>
                                     <br/>
-                                    <input type="radio" onclick="savedata()" id="yes{{row[1]}}" name="{{row[1]}}-plaster" value="yes"
+                                    <input type="radio" onclick="savedata()" id="yes{{row[0]}}" name="{{row[0]}}-plaster" value="yes"
                                         {% if row[4] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="yes{{row[1]}}">Yes</label><br>
+                                    <label for="yes{{row[0]}}">Yes</label><br>
                                     <br/>
-                                    <input type="radio" onclick="savedata()" id="maybe{{row[1]}}" name="{{row[1]}}-plaster" value="maybe" 
+                                    <input type="radio" onclick="savedata()" id="maybe{{row[0]}}" name="{{row[0]}}-plaster" value="maybe" 
                                         {% if row[4] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
-                                    <label for="maybe{{row[1]}}">Maybe</label><br>
+                                    <label for="maybe{{row[0]}}">Maybe</label><br>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[1]}}-notes" onchange="savedata()" name="{{row[1]}}-notes">{{row[7]}}</textarea>
+                                    <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[7]}}</textarea>
                                 </form>
                             </td>
                         </tr>
