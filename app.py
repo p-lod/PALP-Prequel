@@ -191,13 +191,15 @@ def showPPM():
 		indices = []
 		for d in dataTuple:
 			indices.append(d[0])
-			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM_preq WHERE id like %s;"
-			ppm2Cur.execute(ppm2Query, d[0])
+			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM_preq WHERE id = %s;"
+			ppm2Cur.execute(ppm2Query, [d[0]])
 			toin = []
 			for l in d:
 				toin.append(l)
-			for j in ppm2Cur.fetchall():
-				toin.append(j)
+			fetched = ppm2Cur.fetchall()
+			if len(fetched) > 0:
+				for j in fetched[0]:
+					toin.append(j)
 			data.append(toin)
 
 		imgs = []
@@ -225,7 +227,6 @@ def showPPM():
 			data[x].append(imgs[x])
 		 	
 			imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
-			print(imgQuery)
 			ppm2Cur.execute(imgQuery, [imgs[x], data[x][0]])
 		mysql.connection.commit()
 		
@@ -233,6 +234,8 @@ def showPPM():
 
 		ppm = ppmimg = reg = ins = prop = room = ""
 
+		if (session.get('region')):
+			reg = session['region']
 		if (session.get('insula')):
 			ins = session['insula']
 		if (session.get('property')):
@@ -260,8 +263,7 @@ def showPinP():
 
 		pinpCur = mysql.connection.cursor()
 
-		#Join tbl_webpage_images and tbl_box_images on id
-		pinpQuery = "SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
+		pinpQuery = "SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `img_url` "
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -284,23 +286,23 @@ def showPinP():
 
 		pinpCur.execute(pinpQuery, loc)
 		dataTuple = pinpCur.fetchall()
+		print(dataTuple)
 		pinpCur.close()
 
 		pinp2Cur = mysql.connection.cursor()
 		data = []
+		indices = []
 		for d in dataTuple:
-			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PinP_preq WHERE id like %s;"
-			pinp2Cur.execute(pinp2Query, d[0])
+			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PinP_preq WHERE `archive_id` = %s;"
+			pinp2Cur.execute(pinp2Query, [d[0]])
 			toin = []
 			for l in d:
 				toin.append(l)
-			for j in pinp2Cur.fetchall():
-				toin.append(j)
+			fetched = pinp2Cur.fetchall()
+			if len(fetched) > 0:
+				for j in fetched[0]:
+					toin.append(j)
 			data.append(toin)
-		pinp2Cur.close()
-
-		indices = []
-		for d in data:
 			indices.append(d[1])
 			filename = str(d[1]) + ".jpg"
 			if not os.path.exists("static/images/"+filename):
@@ -310,6 +312,7 @@ def showPinP():
 					thumbnail = exception.message
 				with open(os.path.join("static/images",filename), "wb") as f:
 					f.write(thumbnail)
+		pinp2Cur.close()
 
 		if (session.get('region')):
 			reg = session['region']
@@ -361,7 +364,7 @@ def GIS():
 
 @app.route('/save-button', methods=["POST", "GET"]) #Save button found on PinP and PPM pages
 def save_button():
-	date = datetime.now()
+	date = datetime.now().strftime("%Y-%m-%d")
 	if (request.form.get('savepinp')):
 		pinpCur = mysql.connection.cursor()
 		for k, v in request.form.items():
