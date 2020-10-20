@@ -57,6 +57,7 @@ def toRoman(data):
 	return romreg
 
 #Currently not being used: will be a background task
+#NOTE: this will change with new database
 def toWorkspaceSheet():
 	cur = mysql.connection.cursor()
 	PPMQuery = "SELECT `ARC`, `is_art`, `is_plaster`,`other_ARC`, `notes` FROM `PPM`"
@@ -111,7 +112,6 @@ def toWorkspaceSheet():
 
 @app.route("/") # Home page
 def index():
-	#data = toWorkspaceSheet()
 	return render_template('index.html', error="")
 
 @app.route("/login", methods=['POST']) # Login form
@@ -154,7 +154,7 @@ def showPPM():
 
 		#PPM data has individual location columns
 		ppmCur = mysql.connection.cursor()
-		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `description` ASC;"
+		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `description` ASC;"
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -184,19 +184,28 @@ def showPPM():
 
 		ppmCur.execute(ppmQuery, loc)
 		dataTuple = ppmCur.fetchall()
-		data = []
+		ppmCur.close()
 
+		ppm2Cur = mysql.connection.cursor()
+		data = []
 		indices = []
 		for d in dataTuple:
 			indices.append(d[0])
+			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM_preq WHERE id = %s;"
+			ppm2Cur.execute(ppm2Query, [d[0]])
 			toin = []
 			for l in d:
 				toin.append(l)
+			fetched = ppm2Cur.fetchall()
+			if len(fetched) > 0:
+				for j in fetched[0]:
+					toin.append(j)
 			data.append(toin)
 
 		imgs = []
 		for d in data:
 			itemid = "0"
+			#THIS SHOULD BE COMING FROM DATABASE IF POSSIBLE
 			print(d[2])
 			searchid = "\"" + d[2] + "\""
 			box_id = box_client.search().query(query=searchid, file_extensions=['jpg'], ancestor_folder_ids="97077887697,87326350215", fields=["id", "name"], content_types=["name"])
@@ -217,15 +226,16 @@ def showPPM():
 		for x in range(len(data)):
 			data[x].append(imgs[x])
 		 	
-		imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
-		print(imgQuery)
-		ppmCur.execute(imgQuery, [imgs[x], data[x][0]])
+			imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
+			ppm2Cur.execute(imgQuery, [imgs[x], data[x][0]])
 		mysql.connection.commit()
 		
-		ppmCur.close()
+		ppm2Cur.close()
 
 		ppm = ppmimg = reg = ins = prop = room = ""
 
+		if (session.get('region')):
+			reg = session['region']
 		if (session.get('insula')):
 			ins = session['insula']
 		if (session.get('property')):
@@ -253,8 +263,7 @@ def showPinP():
 
 		pinpCur = mysql.connection.cursor()
 
-		#Join tbl_webpage_images and tbl_box_images on id
-		pinpQuery = "SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `archive_id` "
+		pinpQuery = "SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt` FROM `PinP` WHERE `pinp_regio` LIKE %s and `pinp_insula` LIKE %s  and `pinp_entrance` LIKE %s ORDER BY `img_url` "
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -276,12 +285,24 @@ def showPinP():
 			loc.append("%")
 
 		pinpCur.execute(pinpQuery, loc)
-
-		data = pinpCur.fetchall()
+		dataTuple = pinpCur.fetchall()
+		print(dataTuple)
 		pinpCur.close()
 
+		pinp2Cur = mysql.connection.cursor()
+		data = []
 		indices = []
-		for d in data:
+		for d in dataTuple:
+			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PinP_preq WHERE `archive_id` = %s;"
+			pinp2Cur.execute(pinp2Query, [d[0]])
+			toin = []
+			for l in d:
+				toin.append(l)
+			fetched = pinp2Cur.fetchall()
+			if len(fetched) > 0:
+				for j in fetched[0]:
+					toin.append(j)
+			data.append(toin)
 			indices.append(d[1])
 			filename = str(d[1]) + ".jpg"
 			if not os.path.exists("static/images/"+filename):
@@ -291,6 +312,7 @@ def showPinP():
 					thumbnail = exception.message
 				with open(os.path.join("static/images",filename), "wb") as f:
 					f.write(thumbnail)
+		pinp2Cur.close()
 
 		if (session.get('region')):
 			reg = session['region']
@@ -342,6 +364,7 @@ def GIS():
 
 @app.route('/save-button', methods=["POST", "GET"]) #Save button found on PinP and PPM pages
 def save_button():
+	date = datetime.now().strftime("%Y-%m-%d")
 	if (request.form.get('savepinp')):
 		pinpCur = mysql.connection.cursor()
 		for k, v in request.form.items():
@@ -349,19 +372,19 @@ def save_button():
 				ksplit = k.split("-")
 				if len(ksplit) > 1:
 					if ksplit[1] == "art":
-						pinpQuery = 'UPDATE `PinP` SET `is_art` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "plaster":
-						pinpQuery = 'UPDATE `PinP` SET `is_plaster` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
-						pinpQuery = 'UPDATE `PinP` SET `ARC` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":
-						pinpQuery = 'UPDATE `PinP` SET `other_ARC` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "notes":
-						pinpQuery = 'UPDATE `PinP` SET `notes` = "'+ str(v) + '" where `id_box_file` = ' + ksplit[0] +';'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
@@ -372,19 +395,19 @@ def save_button():
 				ksplit = k.split("-")
 				if len(ksplit) > 1:
 					if ksplit[1] == "art":
-						ppmQuery = 'UPDATE `PPM` SET `is_art` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "plaster":
-						ppmQuery = 'UPDATE `PPM` SET `is_plaster` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
-						ppmQuery = 'UPDATE `PPM` SET `ARC` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "others":
-						ppmQuery = 'UPDATE `PPM` SET `other_ARC` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "notes":
-						ppmQuery = 'UPDATE `PPM` SET `notes` = "'+ str(v) + '" where `id` = ' + ksplit[0] +';'
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 		mysql.connection.commit()
 		ppmCur.close()
