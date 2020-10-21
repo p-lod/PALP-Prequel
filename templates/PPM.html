@@ -67,38 +67,38 @@
                     {% for row in dbdata %}
                         <tr>
                             <td>{{row[3]}} {{row[4]}} {{row[5]}} {{row[6]}}</td>
-                            <td width="30%"><a href="https://app.box.com/file/{{row[13]}}" class="d-block mb-4 h-100" target="_blank">
-                                <img class="img-fluid img-thumbnail" src="static/images/{{row[13]}}.jpg" alt="">
+                            <td width="30%"><a href="https://app.box.com/file/{{row[8]}}" class="d-block mb-4 h-100" target="_blank">
+                                <img class="img-fluid img-thumbnail" src="static/images/{{row[8]}}.jpg" alt="">
                             </a></td>
                             <td>{{row[7]}}</td>
                             <td>
                                 <form>
-                                    <input type="text" onchange="savedata()" size="10" id="{{row[0]}}-ARC" name="{{row[0]}}-ARC" value={{row[10]}}>
+                                    <input type="text" onchange="savedata()" size="10" id="{{row[0]}}-ARC" name="{{row[0]}}-ARC" value={{row[11]}}>
                                 </form>
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[0]}}-others" onchange="savedata()" name="{{row[0]}}-others">{{row[11]}}</textarea>
+                                    <textarea id="{{row[0]}}-others" onchange="savedata()" name="{{row[0]}}-others">{{row[12]}}</textarea>
                                 </form>
                             </td>
                             <td>
                                 <form>
                                     <input type="radio" onclick="savedata()" id="no{{row[0]}}" name="{{row[0]}}-art" value="no"
-                                        {% if row[8] == "no" %} 
+                                        {% if row[9] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="no{{row[0]}}">No</label>
                                     <br/>
                                     <input type="radio" onclick="savedata()" id="yes{{row[0]}}" name="{{row[0]}}-art" value="yes"
-                                        {% if row[8] == "yes" %} 
+                                        {% if row[9] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="yes{{row[0]}}">Yes</label><br>
                                     <br/>
                                     <input type="radio" onclick="savedata()" id="maybe{{row[0]}}" name="{{row[0]}}-art" value="maybe" 
-                                        {% if row[8] == "maybe" %} 
+                                        {% if row[9] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
@@ -108,21 +108,21 @@
                             <td>
                                 <form>
                                     <input type="radio" onclick="savedata()" id="no2{{row[0]}}" name="{{row[0]}}-plaster" value="no"
-                                        {% if row[9] == "no" %} 
+                                        {% if row[10] == "no" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="no2{{row[0]}}">No</label>
                                     <br/>
                                     <input type="radio" onclick="savedata()" id="yes2{{row[0]}}" name="{{row[0]}}-plaster" value="yes"
-                                        {% if row[9] == "yes" %} 
+                                        {% if row[10] == "yes" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
                                     <label for="yes2{{row[0]}}">Yes</label><br>
                                     <br/>
                                     <input type="radio" onclick="savedata()" id="maybe2{{row[0]}}" name="{{row[0]}}-plaster" value="maybe" 
-                                        {% if row[9] == "maybe" %} 
+                                        {% if row[10] == "maybe" %} 
                                             checked="checked"
                                         {% endif %}
                                         >
@@ -131,7 +131,7 @@
                             </td>
                             <td>
                                 <form>
-                                    <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[12]}}</textarea>
+                                    <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[13]}}</textarea>
                                 </form>
                             </td>
                         </tr>

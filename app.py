@@ -224,7 +224,7 @@ def showPPM():
 					f.write(thumbnail)
 		
 		for x in range(len(data)):
-			data[x].append(imgs[x])
+			data[x].insert(8,imgs[x])
 		 	
 			imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
 			ppm2Cur.execute(imgQuery, [imgs[x], data[x][0]])
