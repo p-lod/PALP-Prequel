@@ -184,7 +184,9 @@
             xhttp.send("savepinp=1&" + i);
             xhttp.addEventListener('load', function() {
                 var myArr = JSON.parse(this.responseText)
-                alert(myArr.join("<br/>"));
+                if (myArr.length < 1) {
+                    alert(myArr.join("<br/>"));
+                }
             });
         }
         $("#Save").click(savedata);
