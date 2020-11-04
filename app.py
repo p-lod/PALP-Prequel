@@ -390,6 +390,7 @@ def save_button():
 			if v != "":
 				ksplit = k.split("-")
 				if len(ksplit) > 1:
+					vstrip = strip(str(v))
 					if ksplit[1] == "art":
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
@@ -397,10 +398,10 @@ def save_button():
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
-						if str(v) not in session['validARCs'] and str(v) not in session['invcheckedARCs']:
+						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs']:
 							flash(str(v) + " is not in the list of ARCs for this building.")
-							session['invcheckedARCs'].append(str(v))
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
+							session['invcheckedARCs'].append(vstrip)
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
@@ -423,10 +424,11 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
-						if str(v) not in session['validARCs'] and str(v) not in session['invcheckedARCs']:
+						vstrip = strip(str(v))
+						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs']:
 							flash(str(v) + " is not in the list of ARCs for this building.")
-							session['invcheckedARCs'].append(str(v))
-						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
+							session['invcheckedARCs'].append(vstrip)
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "others":
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
