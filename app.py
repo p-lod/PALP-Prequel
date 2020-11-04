@@ -1,5 +1,5 @@
 from __future__ import print_function
-from flask import Flask, render_template, session, json, request, redirect, flash
+from flask import Flask, render_template, session, json, request, redirect, flash, get_flashed_messages, jsonify, make_response
 from flask_mysqldb import MySQL
 from google.cloud import translate_v2 as translate
 from google.oauth2 import service_account
@@ -151,7 +151,12 @@ def init():
 	prop = session['property']
 	if session['property'].isalpha():
 		prop += "1"
-	building = toRoman(session['region']) + session['insula'] + prop
+	elif len(session['property']) < 1:
+		prop = "0" + prop
+	ins = session['insula']
+	if len(session['insula']) < 1:
+		ins = "0" + ins
+	building = session['region'] + ins + prop
 	if building in buildtoARC.keys():
 		session['validARCs'] = buildtoARC[building]
 	else:
@@ -392,8 +397,7 @@ def save_button():
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
 						if str(v) not in session['validARCs']:
-							#throw popup
-							pass 
+							flash(str(v) + " is not in the list of ARCs for this building.")
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":
@@ -417,6 +421,8 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
+						if str(v) not in session['validARCs']:
+							flash(str(v) + " is not in the list of ARCs for this building.")
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "others":
@@ -427,8 +433,7 @@ def save_button():
 						ppmCur.execute(ppmQuery)
 		mysql.connection.commit()
 		ppmCur.close()
-
-	return redirect(request.referrer)
+	return make_response(jsonify(get_flashed_messages()), 201)
 
 @app.route('/search', methods=['POST']) #Search bar at top of pages
 def search():

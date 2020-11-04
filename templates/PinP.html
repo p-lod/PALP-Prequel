@@ -146,9 +146,7 @@
         <div class="fixed-top row justify-content-end" style="margin-right: 10%;">
             <button class="btn btn-success" style="margin-top: 1em; padding: 1.5rem 1.5rem;" id="Save">Save data</button>
         </div>
-        {% with messages = get_flashed_messages() %}
-        {% if messages %}
-        <!-- Modal -->
+                <!-- Modal -->
         <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModal" aria-hidden="false">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -158,8 +156,7 @@
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
-              <div class="modal-body">
-                {{message[0]}}
+              <div class="modal-body" id ="testMOD">
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -167,10 +164,15 @@
             </div>
           </div>
         </div>
-        {% endif %}
-        {% endwith %}
     </div>
     <script type="text/javascript">
+        (function() {
+            var proxied = window.alert;
+            window.alert = function() {
+                $("#errorModal .modal-body").html(arguments[0]);
+                $("#errorModal").modal('show');
+            };
+        })();
         function savedata(){
             var xhttp = new XMLHttpRequest();
             xhttp.open("POST", "save-button", true);
@@ -180,11 +182,13 @@
                 i = i + "&" + $(this).serialize().toString();
             });
             xhttp.send("savepinp=1&" + i);
+            xhttp.addEventListener('load', function() {
+                var myArr = JSON.parse(this.responseText)
+                alert(myArr.join("<br/>"));
+            });
         }
         $("#Save").click(savedata);
-        $(window).on('load',function(){
-            $('#errorModal').modal('show');
-        });
+
     </script>
 </body>
  
