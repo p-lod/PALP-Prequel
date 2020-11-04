@@ -151,10 +151,10 @@ def init():
 	prop = session['property']
 	if session['property'].isalpha():
 		prop += "1"
-	elif len(session['property']) < 1:
+	elif len(session['property']) < 2:
 		prop = "0" + prop
 	ins = session['insula']
-	if len(session['insula']) < 1:
+	if len(session['insula']) < 2:
 		ins = "0" + ins
 	building = session['region'] + ins + prop
 	if building in buildtoARC.keys():
@@ -162,6 +162,7 @@ def init():
 	else:
 		session['validARCs'] = []
 		flash("Heads up: This building is not in our list. Make sure to check it and change if needed!")
+	session['invcheckedARCs'] = []
 	return redirect('/PPM')
 	
 
@@ -398,6 +399,7 @@ def save_button():
 					elif ksplit[1] == "ARC":
 						if str(v) not in session['validARCs']:
 							flash(str(v) + " is not in the list of ARCs for this building.")
+							session['invcheckedARCs'].append(str(v))
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":
@@ -423,6 +425,7 @@ def save_button():
 					elif ksplit[1] == "ARC":
 						if str(v) not in session['validARCs']:
 							flash(str(v) + " is not in the list of ARCs for this building.")
+							session['invcheckedARCs'].append(str(v))
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "others":
