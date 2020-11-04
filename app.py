@@ -10,6 +10,7 @@ import re
 from datetime import datetime
 import os
 import glob
+import pickle
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "ShuJAxtrE8tO5ZT"
@@ -44,8 +45,6 @@ box_auth = boxsdk.JWTAuth(
 box_access_token = box_auth.authenticate_instance()
 box_client = boxsdk.Client(box_auth)
 
-workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU" #my copy so I don't mess things up
-
 #Roman numeral utility
 def toRoman(data):
 	romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"]
@@ -56,8 +55,12 @@ def toRoman(data):
 		romreg = data
 	return romreg
 
+#Load in building-to-ARC dictionary
+buildtoARC = pickle.load( open( "Building_to_Wall_map.pickle", "rb" ) )
+
 #Currently not being used: will be a background task
 #NOTE: this will change with new database
+workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU" #my copy so I don't mess things up
 def toWorkspaceSheet():
 	cur = mysql.connection.cursor()
 	PPMQuery = "SELECT `ARC`, `is_art`, `is_plaster`,`other_ARC`, `notes` FROM `PPM`"
@@ -112,7 +115,7 @@ def toWorkspaceSheet():
 
 @app.route("/") # Home page
 def index():
-	return render_template('index.html', error="")
+	return render_template('index.html', error="", error_show = False)
 
 @app.route("/login", methods=['POST']) # Login form
 def login():
@@ -125,7 +128,7 @@ def login():
 		session['logged_in'] = True
 	else:
 		error = 'Sorry, wrong password!'
-	return render_template('index.html', error=error)
+	return render_template('index.html', error=error, error_show = True)
 
 @app.route('/init', methods=['POST']) #Form submitted from home page
 def init():
@@ -145,7 +148,22 @@ def init():
 		session['room'] = request.form['room']
 	else:
 		session['room'] = ""
+
+	prop = session['property']
+	if session['property'].isalpha():
+		prop += "1"
+	building = toRoman(session['region']) + session['insula'] + prop
+	if building in buildtoARC.keys():
+		session['validARCs'] = buildtoARC[building]
+		return redirect('/PPM')
+	else:
+		session['validARCs'] = []
+
+		#Right now, this is a problem because it creates an endless loop. Do we need it?
+		#error = "Heads up: This building is not in our list. Make sure to check it and change if needed!"
+		#return render_template('index.html', error=error, error_show = True)
 	return redirect('/PPM')
+	
 
 @app.route('/PPM') #PPM page
 def showPPM():
