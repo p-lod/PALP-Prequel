@@ -270,8 +270,8 @@ def showPPM():
 			catextppm=ppm, catextppmimg=ppmimg, dbdata = data, indices = indices,
 			region=reg, insula=ins, property=prop, room=room)
 	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', error=error)
+		flash("Sorry, this page is only accessible by logging in.")
+		return render_template('index.html')
 
 @app.route('/PinP') #PinP page
 def showPinP():
@@ -345,8 +345,8 @@ def showPinP():
 			catextpinp=pinp, dbdata = data, indices = indices,
 			region=reg, insula=ins, property=prop, room=room)
 	else:
-		error= "Sorry, this page is only accessible by logging in."
-		return render_template('index.html', error=error)
+		flash("Sorry, this page is only accessible by logging in.")
+		return render_template('index.html')
 	
 @app.route('/help') #Help page - the info here is in the HTML
 def help():

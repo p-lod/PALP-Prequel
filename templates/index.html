@@ -63,6 +63,21 @@
             <p>Before getting started, make sure you are logged into <a href="https://accounts.google.com/login" target="_blank">Google</a> and <a href="https://app.box.com/login" target="_blank">Box</a>.</p>
         </div>
 
+        {% else %}
+        <div class="row">
+            <form action="/login" method="POST">
+                <label for="username"> Username </label>
+                <input class="form-control" name="username" id="username" required>
+                <br/>
+                <label for="password"> Password </label>
+                <input type="password" class="form-control" name="password" id="password" required>
+                <br/>
+                <input type="submit" class="btn btn-primary" value="Log in">
+            </form>
+        </div>
+
+        {% endif %}
+        
         {% with messages = get_flashed_messages() %}
         {% if messages %}
         <!-- Modal -->
@@ -86,21 +101,6 @@
         </div>
         {% endif %}
         {% endwith %}
-
-        {% else %}
-        <div class="row">
-            <form action="/login" method="POST">
-                <label for="username"> Username </label>
-                <input class="form-control" name="username" id="username" required>
-                <br/>
-                <label for="password"> Password </label>
-                <input type="password" class="form-control" name="password" id="password" required>
-                <br/>
-                <input type="submit" class="btn btn-primary" value="Log in">
-            </form>
-        </div>
-
-        {% endif %}
     </div>
     <script type="text/javascript">
     $(window).on('load',function(){
