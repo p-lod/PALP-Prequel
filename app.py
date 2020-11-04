@@ -115,11 +115,10 @@ def toWorkspaceSheet():
 
 @app.route("/") # Home page
 def index():
-	return render_template('index.html', error="", error_show = False)
+	return render_template('index.html')
 
 @app.route("/login", methods=['POST']) # Login form
 def login():
-	error = ""
 	with open('user.cfg', 'r') as user_cfg:
 		user_lines = user_cfg.read().splitlines()
 		username = user_lines[0]
@@ -127,8 +126,8 @@ def login():
 	if request.form['password'] == password and request.form['username'] == username:
 		session['logged_in'] = True
 	else:
-		error = 'Sorry, wrong password!'
-	return render_template('index.html', error=error, error_show = True)
+		flash('Sorry, wrong password!')
+	return render_template('index.html')
 
 @app.route('/init', methods=['POST']) #Form submitted from home page
 def init():
@@ -155,13 +154,9 @@ def init():
 	building = toRoman(session['region']) + session['insula'] + prop
 	if building in buildtoARC.keys():
 		session['validARCs'] = buildtoARC[building]
-		return redirect('/PPM')
 	else:
 		session['validARCs'] = []
-
-		#Right now, this is a problem because it creates an endless loop. Do we need it?
-		#error = "Heads up: This building is not in our list. Make sure to check it and change if needed!"
-		#return render_template('index.html', error=error, error_show = True)
+		flash("Heads up: This building is not in our list. Make sure to check it and change if needed!")
 	return redirect('/PPM')
 	
 
@@ -396,6 +391,9 @@ def save_button():
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
+						if str(v) not in session['validARCs']:
+							#throw popup
+							pass 
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":

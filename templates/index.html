@@ -63,7 +63,8 @@
             <p>Before getting started, make sure you are logged into <a href="https://accounts.google.com/login" target="_blank">Google</a> and <a href="https://app.box.com/login" target="_blank">Box</a>.</p>
         </div>
 
-        {% if error_show %}
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
         <!-- Modal -->
         <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModal" aria-hidden="false">
           <div class="modal-dialog" role="document">
@@ -75,7 +76,7 @@
                 </button>
               </div>
               <div class="modal-body">
-                {{error}}
+                {{message[0]}}
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -84,6 +85,7 @@
           </div>
         </div>
         {% endif %}
+        {% endwith %}
 
         {% else %}
         <div class="row">
