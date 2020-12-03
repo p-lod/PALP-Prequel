@@ -10,7 +10,6 @@ import re
 from datetime import datetime
 import os
 import glob
-import pickle
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "ShuJAxtrE8tO5ZT"
@@ -29,6 +28,10 @@ tr_credentials = service_account.Credentials.from_service_account_file("My Proje
 scopes = ['https://www.googleapis.com/auth/spreadsheets']
 scoped_gs = tr_credentials.with_scopes(scopes)
 sheets_client = build('sheets', 'v4', credentials=scoped_gs)
+tracking_ws = "1F4nXX1QoyV1miaRUop2ctm8snDyov6GNu9aLt9t3a3M"
+ranges = "Workflow_Tracking!A3:L87075"
+gsheet = sheet.values().get(spreadsheetId=tracking_ws, range=ranges, majorDimension="COLUMNS").execute()
+
 
 #Box API configurations
 with open('box_config.json', 'r') as f:
@@ -54,64 +57,6 @@ def toRoman(data):
 	else:
 		romreg = data
 	return romreg
-
-#Load in building-to-ARC dictionary
-buildtoARC = pickle.load( open( "Building_to_Wall_map.pickle", "rb" ) )
-
-#Currently not being used: will be a background task
-#NOTE: this will change with new database
-workflow_tracker_id = "1EdnoFWDpd38sznIrqMplmFwDMHlN7UATGEEIUsxpZdU" #my copy so I don't mess things up
-def toWorkspaceSheet():
-	cur = mysql.connection.cursor()
-	PPMQuery = "SELECT `ARC`, `is_art`, `is_plaster`,`other_ARC`, `notes` FROM `PPM`"
-	cur.execute(PPMQuery)
-
-	PinPQuery = "SELECT `ARC`, `is_art`, `is_plaster`, `other_ARC`, `notes` FROM `PinP`"
-	cur.execute(PinPQuery)
-	data = cur.fetchall()
-	cur.close()
-
-	arclist = {}
-	dataNotTuple = []
-	for d in data:
-		if d[0] != "":
-			arclist[d[0]] = {"art": "", "plaster": "", "other_notes": ""}
-			dataNotTuple.append([d[0], d[1], d[2], d[3], d[4]])
-	for x in dataNotTuple:
-		if "art" in arclist[x[0]]:
-			if arclist[x[0]]["art"] != "yes":
-				arclist[x[0]]["art"] = x[1]
-		else:
-			arclist[x[0]]["art"] = x[1]
-
-		if "plaster" in arclist[x[0]]:
-			if arclist[x[0]]["plaster"] != "yes":
-				arclist[x[0]]["plaster"] = x[2]
-		else:
-			arclist[x[0]]["plaster"] = x[2]
-		arclist[x[0]]["other_notes"] += ", " + x[4]
-	print(arclist)
-
-	sheet = sheets_client.spreadsheets()
-	ranges = "Workflow_Tracking!A1:V87077"
-	gsheet = sheet.values().get(spreadsheetId=workflow_tracker_id, range="Workflow_Tracking!A1:V87077").execute()
-	values = gsheet.get('values', [])
-	toupdate = {}
-	for gindex in range(len(values)):
-		g = values[gindex]
-		if g[6] in arclist:
-			print(g[6])
-			print(arclist[g[6]])
-			print(g)
-			g[11] = arclist[g[6]]["art"]
-			g[12] = arclist[g[6]]["plaster"]
-			g[16] = arclist[g[6]]["other_notes"]
-			toupdate[gindex] = g
-	for k in toupdate:
-		rangenum = "Workflow_Tracking!H"+str(k) + ":V" + str(k)
-		print(rangenum)
-		valuerangebody = {"range": rangenum, "majorDimension": "ROWS", "values": [toupdate[k][7:]]}
-		updaterequest = sheet.values().update(spreadsheetId=workflow_tracker_id, range=rangenum, body=valuerangebody, valueInputOption="RAW").execute()
 
 @app.route("/") # Home page
 def index():
@@ -156,12 +101,17 @@ def init():
 	ins = session['insula']
 	if len(session['insula']) < 2:
 		ins = "0" + ins
-	building = session['region'] + ins + prop
-	if building in buildtoARC.keys():
-		session['validARCs'] = buildtoARC[building]
-	else:
-		session['validARCs'] = []
-		flash("Heads up: This building is not in our list. Make sure to check it and change if needed!")
+	building = toRoman(session['region']) + ins + prop + session['room']
+	values = gsheet.get('values', [])
+	locationlist = values[0]
+	arclist = values[6]
+
+	session['validARCs'] = []
+	for l in range(len(locationlist)):
+		if locationlist[l].startswith(building):
+			session['validARCs'].append(arclist[l])
+	if session['validARCs'] == []:
+		flash("Heads up: This building doesn't have any ARCs. Make sure to check it and change if needed!")
 	session['invcheckedARCs'] = []
 	return redirect('/PPM')
 	
@@ -392,22 +342,22 @@ def save_button():
 				if len(ksplit) > 1:
 					vstrip = str(v).strip()
 					if ksplit[1] == "art":
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "plaster":
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
-						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:2] == "ARC":
+						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
 							flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '","'+ date +'") ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "others":
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "notes":
-						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
@@ -425,7 +375,7 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
-						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:2] == "ARC":
+						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
 							flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
