@@ -30,6 +30,7 @@ scoped_gs = tr_credentials.with_scopes(scopes)
 sheets_client = build('sheets', 'v4', credentials=scoped_gs)
 tracking_ws = "1F4nXX1QoyV1miaRUop2ctm8snDyov6GNu9aLt9t3a3M"
 ranges = "Workflow_Tracking!A3:L87075"
+sheet = sheets_client.spreadsheets()
 gsheet = sheet.values().get(spreadsheetId=tracking_ws, range=ranges, majorDimension="COLUMNS").execute()
 
 
