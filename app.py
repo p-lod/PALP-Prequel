@@ -10,6 +10,14 @@ import re
 from datetime import datetime
 import os
 import glob
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+sentry_sdk.init(
+    dsn="https://467f5f32371848da8c0ef7a3481afd04@o493026.ingest.sentry.io/5561397",
+    integrations=[FlaskIntegration()],
+    traces_sample_rate=1.0
+)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "ShuJAxtrE8tO5ZT"
@@ -29,7 +37,7 @@ scopes = ['https://www.googleapis.com/auth/spreadsheets']
 scoped_gs = tr_credentials.with_scopes(scopes)
 sheets_client = build('sheets', 'v4', credentials=scoped_gs)
 tracking_ws = "1F4nXX1QoyV1miaRUop2ctm8snDyov6GNu9aLt9t3a3M"
-ranges = "Workflow_Tracking!A3:L87075"
+ranges = "Workflow_Tracking!A3:L87078"
 sheet = sheets_client.spreadsheets()
 gsheet = sheet.values().get(spreadsheetId=tracking_ws, range=ranges, majorDimension="COLUMNS").execute()
 
@@ -58,6 +66,10 @@ def toRoman(data):
 	else:
 		romreg = data
 	return romreg
+
+@app.route('/debug-sentry')
+def trigger_error():
+    division_by_zero = 1 / 0
 
 @app.route("/") # Home page
 def index():
