@@ -127,8 +127,8 @@ def init():
 	for l in range(len(locationlist)):
 		if locationlist[l].startswith(building):
 			session['validARCs'].append(arclist[l])
-	if session['validARCs'] == []:
-		flash("Heads up: This building doesn't have any ARCs. Make sure to check it and change if needed!")
+	# if session['validARCs'] == []:
+	# 	flash("Heads up: This building doesn't have any ARCs. Make sure to check it and change if needed!")
 	session['invcheckedARCs'] = []
 	return redirect('/PPM')
 	
@@ -140,7 +140,7 @@ def showPPM():
 
 		#PPM data has individual location columns
 		ppmCur = mysql.connection.cursor()
-		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `description` ASC;"
+		ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `image_path` ASC;"
 		loc = []
 		if (session.get('region')):
 			loc.append(toRoman(session['region']))
@@ -297,7 +297,10 @@ def showPinP():
 				except boxsdk.BoxAPIException as exception:
 					thumbnail = exception.message
 				with open(os.path.join("static/images",filename), "wb") as f:
-					f.write(thumbnail)
+					try:
+						f.write(thumbnail)
+					except TypeError:
+						print(thumbnail)
 		pinp2Cur.close()
 
 		if (session.get('region')):
@@ -366,7 +369,7 @@ def save_button():
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
 						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
-							flash(str(v) + " is not in the list of ARCs for this building.")
+							# flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '","'+ date +'") ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
@@ -393,7 +396,7 @@ def save_button():
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
 						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
-							flash(str(v) + " is not in the list of ARCs for this building.")
+							# flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
