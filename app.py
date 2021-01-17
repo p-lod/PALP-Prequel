@@ -110,25 +110,25 @@ def init():
 	else:
 		session['room'] = ""
 
-	prop = session['property']
-	if session['property'].isalpha():
-		prop += "1"
-	elif len(session['property']) < 2:
-		prop = "0" + prop
-	ins = session['insula']
-	if len(session['insula']) < 2:
-		ins = "0" + ins
-	building = toRoman(session['region']) + ins + prop + session['room']
+	# prop = session['property']
+	# if session['property'].isalpha():
+	# 	prop += "1"
+	# elif len(session['property']) < 2:
+	# 	prop = "0" + prop
+	# ins = session['insula']
+	# if len(session['insula']) < 2:
+	# 	ins = "0" + ins
+	# building = toRoman(session['region']) + ins + prop + session['room']
+	
+	building = "r" + str(session['region']) + "-i"+str(session['insula']) + "-p" + session['property'] + "-space-" + session['room']
 	values = gsheet.get('values', [])
-	locationlist = values[0]
-	arclist = values[6]
+	locationlist = values[1]
+	arclist = values[7]
 
 	session['validARCs'] = []
 	for l in range(len(locationlist)):
 		if locationlist[l].startswith(building):
 			session['validARCs'].append(arclist[l])
-	# if session['validARCs'] == []:
-	# 	flash("Heads up: This building doesn't have any ARCs. Make sure to check it and change if needed!")
 	session['invcheckedARCs'] = []
 	return redirect('/PPM')
 	
@@ -369,7 +369,7 @@ def save_button():
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "ARC":
 						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
-							# flash(str(v) + " is not in the list of ARCs for this building.")
+							flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '","'+ date +'") ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
@@ -396,7 +396,7 @@ def save_button():
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "ARC":
 						if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
-							# flash(str(v) + " is not in the list of ARCs for this building.")
+							flash(str(v) + " is not in the list of ARCs for this building.")
 							session['invcheckedARCs'].append(vstrip)
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
