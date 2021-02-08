@@ -380,7 +380,7 @@ def save_button():
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							pinpCur.execute(pinpQuery)
-						except ProgrammingError:
+						except mysql.connector.ProgrammingError:
 							flash('Please resubmit without double quotes (")')
 					elif ksplit[1] == "is-hero":
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, hero_image, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `hero_image` = "'+ str(v) + '", `date_added` = "' + date +'";'
@@ -413,7 +413,7 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							ppmCur.execute(ppmQuery)
-						except ProgrammingError:
+						except mysql.connector.ProgrammingError:
 							flash('Please resubmit without double quotes (")')
 					elif ksplit[1] == "is-hero":
 						flash(ksplit[0])
