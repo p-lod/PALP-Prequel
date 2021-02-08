@@ -177,7 +177,7 @@ def showPPM():
 		indices = []
 		for d in dataTuple:
 			indices.append(d[0])
-			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PPM_preq WHERE id = %s;"
+			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image` FROM PPM_preq WHERE id = %s;"
 			ppm2Cur.execute(ppm2Query, [d[0]])
 			toin = []
 			for l in d:
@@ -279,7 +279,7 @@ def showPinP():
 		data = []
 		indices = []
 		for d in dataTuple:
-			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes` FROM PinP_preq WHERE `archive_id` = %s;"
+			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image` FROM PinP_preq WHERE `archive_id` = %s;"
 			pinp2Cur.execute(pinp2Query, [d[0]])
 			toin = []
 			for l in d:
@@ -378,6 +378,12 @@ def save_button():
 						pinpCur.execute(pinpQuery)
 					elif ksplit[1] == "notes":
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						try:
+							pinpCur.execute(pinpQuery)
+						except ProgrammingError:
+							flash('Please resubmit without double quotes (")')
+					elif ksplit[1] == "is-hero":
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, hero_image, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `hero_image` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
@@ -405,6 +411,13 @@ def save_button():
 						ppmCur.execute(ppmQuery)
 					elif ksplit[1] == "notes":
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						try:
+							ppmCur.execute(ppmQuery)
+						except ProgrammingError:
+							flash('Please resubmit without double quotes (")')
+					elif ksplit[1] == "is-hero":
+						flash(ksplit[0])
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, hero_image, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `hero_image` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						ppmCur.execute(ppmQuery)
 		mysql.connection.commit()
 		ppmCur.close()
@@ -429,6 +442,98 @@ def search():
 	else:
 		session['room'] = ""
 	return redirect(request.referrer)
+
+@app.route("/PPP") # PPP page
+def showPPP():
+
+	if session.get('logged_in') and session["logged_in"]:
+		inswithz = propwithz = ""
+
+		pppCur = mysql.connection.cursor()
+		rm = ""
+		if session['room']:
+			rm = "' and `Room` = '" +session['room']
+		pppQuery = "SELECT uuid, description, id, location, material FROM PPP WHERE `Region` = '" +session['region']+ "' and `Insula` = '" +session['insula']+ "' and `Doorway` = '" +session['property']+ rm+"';"
+
+		pppCur.execute(pppQuery)
+		data = pppCur.fetchall()
+		pppCur.close()
+
+		indices = []
+		for d in data:
+			indices.append(d[0])
+
+		transdata = []
+		dataplustrans = []
+		for d in data:
+			translation = translate_client.translate(d[1], target_language="en", source_language="it")
+			transdata.append(translation['translatedText'])
+			dlist = list(d)
+			dlist.append(translation['translatedText'])
+
+			arcCur = mysql.connection.cursor()
+			arcQuery = 'SELECT ARCs FROM PPP_desc WHERE uuid = "' +d[0] +'";'
+			arcCur.execute(arcQuery)
+			newarcs = arcCur.fetchall()
+			arcCur.close()
+			if len(newarcs) > 0:
+				dlist.append(newarcs[0][0])
+			else:
+				dlist.append("")
+
+			dataplustrans.append(dlist)
+
+		current = session['current']
+		v = session['ARClist'][current]
+		carryCur = mysql.connection.cursor()
+		carryQuery = "SELECT description, reviewed FROM PPP WHERE uuid in ('" + "','".join(v["ppps"]) + "') ;"
+		carryCur.execute(carryQuery)
+		dataList = carryCur.fetchall()
+		carryCur.close()
+
+		dataCopy = ""
+		for d in dataList:
+			dataCopy += translate_client.translate(d[0], target_language="en", source_language="it")['translatedText'] + "; "
+
+		session['carryoverPPP'] = dataCopy
+
+
+		return render_template('PPP.html',
+			dbdata = dataplustrans, indices = indices,
+			region=session['region'], insula=session['insula'], property=session['property'], room=session['room'])
+
+	else:
+		error= "Sorry, this page is only accessible by logging in."
+		return render_template('index.html', arc="", error=error)
+
+#When items are changed via update form, update database
+@app.route('/update-ppp', methods=['POST'])
+def updatePPP():
+	pppCur = mysql.connection.cursor()
+	dictargs = request.form.to_dict()
+	for k, v in dictargs.items():
+		vrep = v.replace('\n', ' ').replace('\r', ' ').replace('\'', "\\'")
+		sep = k.split("_")
+		pppQuery = "INSERT INTO PPP(`uuid`) SELECT * FROM ( SELECT '" + sep[0] + "' ) AS tmp WHERE NOT EXISTS ( SELECT 1 FROM PPP WHERE `uuid` = '" + sep[0] + "' ) LIMIT 1;"
+		pppCur.execute(pppQuery)
+		mysql.connection.commit()
+		if sep[1] == "a":
+			pppQueryA = "UPDATE PPP SET `id` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+			pppCur.execute(pppQueryA)
+		if sep[1] == "b":
+			pppQueryB = "UPDATE PPP SET `location` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+			pppCur.execute(pppQueryB)
+		if sep[1] == "c":
+			pppQueryC = "UPDATE PPP SET `material` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+			pppCur.execute(pppQueryC)
+		if sep[1] == "d":
+			pppQueryD = "UPDATE PPP SET `description` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+			pppCur.execute(pppQueryD)
+	mysql.connection.commit()
+	pppCur.close()
+
+	return redirect('/PPP')
+
 
 
 if __name__ == "__main__":
