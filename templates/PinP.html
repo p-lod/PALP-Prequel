@@ -145,16 +145,6 @@
                                     <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[7]}}</textarea>
                                 </form>
                             </td>
-                            <td>
-                                <form>
-                                    <input type="checkbox"  onclick="savedata()" id="ishero{{row[0]}}" name="{{row[0]}}-ishero" value ="1"
-                                        {% if row[14] == 1 %} 
-                                            checked="checked"
-                                        {% endif %} >
-                                    <label for="ishero{{row[0]}}" hidden="true">Hero image </label>
-                                    <input id="ishero{{row[0]}}Hidden" name="{{row[0]}}-ishero" type='hidden' aria-hidden="true"value='0'>
-                                </form>
-                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -198,9 +188,6 @@
             xhttp.open("POST", "save-button", true);
             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             var i = "";
-            if(document.getElementById("ishero{{row[0}}").checked) {
-                document.getElementById('ishero{{row[0}}Hidden').disabled = true;
-            }
             $('form').each(function () {
                 i = i + "&" + $(this).serialize().toString();
             });
