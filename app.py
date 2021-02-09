@@ -380,7 +380,7 @@ def save_button():
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							pinpCur.execute(pinpQuery)
-						except mysql.connector.errors.ProgrammingError:
+						except Exception:
 							flash('Please resubmit without double quotes (")')
 		mysql.connection.commit()
 		pinpCur.close()
@@ -410,7 +410,7 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							ppmCur.execute(ppmQuery)
-						except mysql.connector.errors.ProgrammingError:
+						except Exception:
 							flash('Please resubmit without double quotes (")')
 		mysql.connection.commit()
 		ppmCur.close()
