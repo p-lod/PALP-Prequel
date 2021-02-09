@@ -380,11 +380,8 @@ def save_button():
 						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							pinpCur.execute(pinpQuery)
-						except _mysql_exceptions.ProgrammingError:
+						except mysql.connector.errors.ProgrammingError:
 							flash('Please resubmit without double quotes (")')
-					# elif ksplit[1] == "is-hero":
-					# 	pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, hero_image, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `hero_image` = "'+ str(v) + '", `date_added` = "' + date +'";'
-					# 	pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
 	if (request.form.get('saveppm')):
@@ -413,12 +410,8 @@ def save_button():
 						ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
 						try:
 							ppmCur.execute(ppmQuery)
-						except _mysql_exceptions.ProgrammingError:
+						except mysql.connector.errors.ProgrammingError:
 							flash('Please resubmit without double quotes (")')
-					# elif ksplit[1] == "is-hero":
-					# 	flash(ksplit[0])
-					# 	ppmQuery = 'INSERT INTO `PPM_preq` (id, hero_image, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `hero_image` = "'+ str(v) + '", `date_added` = "' + date +'";'
-					# 	ppmCur.execute(ppmQuery)
 		mysql.connection.commit()
 		ppmCur.close()
 	return make_response(jsonify(get_flashed_messages()), 201)
@@ -482,14 +475,6 @@ def showPPP():
 				dlist.append("")
 
 			dataplustrans.append(dlist)
-
-		current = session['current']
-		v = session['ARClist'][current]
-		carryCur = mysql.connection.cursor()
-		carryQuery = "SELECT description, reviewed FROM PPP WHERE uuid in ('" + "','".join(v["ppps"]) + "') ;"
-		carryCur.execute(carryQuery)
-		dataList = carryCur.fetchall()
-		carryCur.close()
 
 		dataCopy = ""
 		for d in dataList:
