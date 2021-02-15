@@ -440,7 +440,6 @@ def search():
 def showPPP():
 
 	if session.get('logged_in') and session["logged_in"]:
-		pullPre()
 		inswithz = propwithz = ""
 
 		pppCur = mysql.connection.cursor()
