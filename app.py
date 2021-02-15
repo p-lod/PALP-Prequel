@@ -440,51 +440,20 @@ def search():
 def showPPP():
 
 	if session.get('logged_in') and session["logged_in"]:
+		pullPre()
 		inswithz = propwithz = ""
 
 		pppCur = mysql.connection.cursor()
 		rm = ""
 		if session['room']:
 			rm = "' and `Room` = '" +session['room']
-		pppQuery = "SELECT uuid, description, id, location, material FROM PPP WHERE `Region` = '" +session['region']+ "' and `Insula` = '" +session['insula']+ "' and `Doorway` = '" +session['property']+ rm+"';"
+		pppQuery = "SELECT uuid, id, location, material, description, condition_ppp, style, bibliography, photo_negative FROM PPP WHERE `Region` = '" +session['region']+ "' and `Insula` = '" +session['insula']+ "' and `Doorway` = '" +session['property']+ rm+"';"
 
 		pppCur.execute(pppQuery)
 		data = pppCur.fetchall()
 		pppCur.close()
 
-		indices = []
-		for d in data:
-			indices.append(d[0])
-
-		transdata = []
-		dataplustrans = []
-		for d in data:
-			translation = translate_client.translate(d[1], target_language="en", source_language="it")
-			transdata.append(translation['translatedText'])
-			dlist = list(d)
-			dlist.append(translation['translatedText'])
-
-			arcCur = mysql.connection.cursor()
-			arcQuery = 'SELECT ARCs FROM PPP_desc WHERE uuid = "' +d[0] +'";'
-			arcCur.execute(arcQuery)
-			newarcs = arcCur.fetchall()
-			arcCur.close()
-			if len(newarcs) > 0:
-				dlist.append(newarcs[0][0])
-			else:
-				dlist.append("")
-
-			dataplustrans.append(dlist)
-
-		dataCopy = ""
-		for d in dataList:
-			dataCopy += translate_client.translate(d[0], target_language="en", source_language="it")['translatedText'] + "; "
-
-		session['carryoverPPP'] = dataCopy
-
-
-		return render_template('PPP.html',
-			dbdata = dataplustrans, indices = indices,
+		return render_template('PPP.html', dbdata = data, 
 			region=session['region'], insula=session['insula'], property=session['property'], room=session['room'])
 
 	else:
@@ -496,28 +465,41 @@ def showPPP():
 def updatePPP():
 	pppCur = mysql.connection.cursor()
 	dictargs = request.form.to_dict()
+	date = datetime.now().strftime("%Y-%m-%d")
+	sep = dictargs['uuid'].split("_")
 	for k, v in dictargs.items():
-		vrep = v.replace('\n', ' ').replace('\r', ' ').replace('\'', "\\'")
-		sep = k.split("_")
-		pppQuery = "INSERT INTO PPP(`uuid`) SELECT * FROM ( SELECT '" + sep[0] + "' ) AS tmp WHERE NOT EXISTS ( SELECT 1 FROM PPP WHERE `uuid` = '" + sep[0] + "' ) LIMIT 1;"
+		pppQuery = "INSERT INTO PPP(`uuid`) SELECT * FROM ( SELECT '" + sep[1] + "' ) AS tmp WHERE NOT EXISTS ( SELECT 1 FROM PPP WHERE `uuid` = '" + sep[1] + "' ) LIMIT 1;"
 		pppCur.execute(pppQuery)
 		mysql.connection.commit()
-		if sep[1] == "a":
-			pppQueryA = "UPDATE PPP SET `id` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+		vrep = v.replace('\n', ' ').replace('\r', ' ').replace('\'', "\\'")
+		if k == "PPPID":
+			pppQueryA = "UPDATE PPP SET `id` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
 			pppCur.execute(pppQueryA)
-		if sep[1] == "b":
-			pppQueryB = "UPDATE PPP SET `location` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+		if k == "location":
+			pppQueryB = "UPDATE PPP SET `location` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
 			pppCur.execute(pppQueryB)
-		if sep[1] == "c":
-			pppQueryC = "UPDATE PPP SET `material` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+		if k == "material":
+			pppQueryC = "UPDATE PPP SET `material` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
 			pppCur.execute(pppQueryC)
-		if sep[1] == "d":
-			pppQueryD = "UPDATE PPP SET `description` = '" + vrep + "' WHERE `uuid` = '" + sep[0] + "';"
+		if k == "description":
+			pppQueryD = "UPDATE PPP SET `description` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
 			pppCur.execute(pppQueryD)
+		if k == "condition":
+			pppQueryE = "UPDATE PPP SET `condition_ppp` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
+			pppCur.execute(pppQueryE)
+		if k == "style":
+			pppQueryF = "UPDATE PPP SET `style` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
+			pppCur.execute(pppQueryF)
+		if k == "bibliography":
+			pppQueryG = "UPDATE PPP SET `bibliography` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
+			pppCur.execute(pppQueryG)
+		if k == "negative":
+			pppQueryH = "UPDATE PPP SET `photo_negative` = '" + vrep + "' WHERE `uuid` = '" + sep[1] + "';"
+			pppCur.execute(pppQueryH)
 	mysql.connection.commit()
 	pppCur.close()
 
-	return redirect('/PPP')
+	return redirect('/PPP#editModal')
 
 
 
