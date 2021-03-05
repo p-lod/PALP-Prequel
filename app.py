@@ -382,6 +382,9 @@ def save_button():
 							pinpCur.execute(pinpQuery)
 						except Exception:
 							flash('Please resubmit without double quotes (")')
+					elif ksplit[1] == "help":
+						pinpQuery = 'INSERT INTO `PinP_preq` (archive_id, need_help, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `need_help` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						pinpCur.execute(pinpQuery)
 		mysql.connection.commit()
 		pinpCur.close()
 	if (request.form.get('saveppm')):
@@ -412,6 +415,9 @@ def save_button():
 							ppmCur.execute(ppmQuery)
 						except Exception:
 							flash('Please resubmit without double quotes (")')
+					elif ksplit[1] == "help":
+						ppmQuery = 'INSERT INTO `PPM_preq` (id, need_help, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `need_help` = "'+ str(v) + '", `date_added` = "' + date +'";'
+						ppmCur.execute(ppmQuery)
 		mysql.connection.commit()
 		ppmCur.close()
 	return make_response(jsonify(get_flashed_messages()), 201)

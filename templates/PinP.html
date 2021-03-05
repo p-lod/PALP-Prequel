@@ -61,6 +61,7 @@
                     <col width="5%">
                     <col>
                     <col>
+                    <col>
                 </colgroup>
                 <thead>
                     <tr>
@@ -72,6 +73,7 @@
                         <th scope="col">Is there art?</th>
                         <th scope="col">Is there plaster?</th>
                         <th scope="col">Notes</th>
+                        <th scope="col">Ask for help</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -141,6 +143,14 @@
                             <td>
                                 <form>
                                     <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[7]}}</textarea>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <select id="{{row[0]}}-help" onchange="savedata()" name="{{row[0]}}-help">
+                                      <option value="0"></option>
+                                      <option value="1">Needs Help</option>
+                                    </select>
                                 </form>
                             </td>
                         </tr>
