@@ -145,8 +145,12 @@
                             <td>
                                 <form>
                                     <select id="{{row[0]}}-help" onchange="savedata()" name="{{row[0]}}-help">
-                                      <option value="0"></option>
-                                      <option value="1">Needs Help</option>
+                                      <option value="0" {% if row[15] == "0" %} 
+                                            selected
+                                        {% endif %}></option>
+                                      <option value="1" {% if row[15] == "1" %} 
+                                            selected
+                                        {% endif %}>Needs Help</option>
                                     </select>
                                 </form>
                             </td>

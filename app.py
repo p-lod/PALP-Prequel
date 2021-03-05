@@ -177,7 +177,7 @@ def showPPM():
 		indices = []
 		for d in dataTuple:
 			indices.append(d[0])
-			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image` FROM PPM_preq WHERE id = %s;"
+			ppm2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image`, `need_help` FROM PPM_preq WHERE id = %s;"
 			ppm2Cur.execute(ppm2Query, [d[0]])
 			toin = []
 			for l in d:
@@ -279,7 +279,7 @@ def showPinP():
 		data = []
 		indices = []
 		for d in dataTuple:
-			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image` FROM PinP_preq WHERE `archive_id` = %s;"
+			pinp2Query = "SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image`, `need_help` FROM PinP_preq WHERE `archive_id` = %s;"
 			pinp2Cur.execute(pinp2Query, [d[0]])
 			toin = []
 			for l in d:
