@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <title>Needs Help - PALP Prequel</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.css">
+    <script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.js"></script>
+    <script src="{{ url_for('static', filename='js/store.everything.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.resizableColumns.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-table-master/src/extensions/resizable/bootstrap-table-resizable.js') }}"></script>
+</head>
+ 
+<body>
+ 
+    <div class="container">
+        <div class="header">
+            <h1> PALP Prequel</h1>
+            <nav>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/needs_help_pinp">PinP Needs Help</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/needs_help_ppm">PPM Needs Help</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Search Prequel</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="row"><h2>Asked for help - PinP</h2></div>
+        <div class="row">
+            <table class="table table-bordered" data-resizable="true" width="100%">
+                <colgroup>
+                    <col>
+                    <col>
+                    <col width="50%">
+                    <col width="50%">
+                    <col width="5%">
+                    <col width="5%">
+                    <col width="5%">
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Image</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Primary ARC</th>
+                        <th scope="col">Additional ARC numbers</th>
+                        <th scope="col">Is there art?</th>
+                        <th scope="col">Is there plaster?</th>
+                        <th scope="col">Notes</th>
+                        <th scope="col">Asked for help</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dbdata %}
+                        <tr>
+                            <td> {{row[0]}} </td>
+                            <td> {{row[7]}} {{row[8]}} {{row[9]}}</td>
+                            <td> <a href="https://app.box.com/file/{{row[10]}}" target="_blank"><img class="img-fluid img-thumbnail" src="static/images/{{row[10]}}.jpg" alt=""></a> </td>
+                            <td>{{row[11]}}</td>
+                            <td>
+                                <form>
+                                    <input type="text" onchange="savedata()" size="10" id="{{row[0]}}-ARC" name="{{row[0]}}-ARC" value={{row[3]}}>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <textarea id="{{row[0]}}-others" onchange="savedata()" name="{{row[0]}}-others">{{row[4]}}</textarea>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="radio" onclick="savedata()" id="no1{{row[0]}}" name="{{row[0]}}-art" value="no"
+                                        {% if row[2] == "no" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="no1{{row[0]}}">No</label>
+                                    <br/>
+                                    <input type="radio" onclick="savedata()" id="yes1{{row[0]}}" name="{{row[0]}}-art" value="yes"
+                                        {% if row[2] == "yes" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="yes1{{row[0]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" onclick="savedata()" id="maybe1{{row[0]}}" name="{{row[0]}}-art" value="maybe" 
+                                        {% if row[2] == "maybe" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="maybe1{{row[0]}}">Maybe</label><br>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <input type="radio" onclick="savedata()" id="no{{row[0]}}" name="{{row[0]}}-plaster" value="no"
+                                        {% if row[3] == "no" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="no{{row[0]}}">No</label>
+                                    <br/>
+                                    <input type="radio" onclick="savedata()" id="yes{{row[0]}}" name="{{row[0]}}-plaster" value="yes"
+                                        {% if row[3] == "yes" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="yes{{row[0]}}">Yes</label><br>
+                                    <br/>
+                                    <input type="radio" onclick="savedata()" id="maybe{{row[0]}}" name="{{row[0]}}-plaster" value="maybe" 
+                                        {% if row[3] == "maybe" %} 
+                                            checked="checked"
+                                        {% endif %}
+                                        >
+                                    <label for="maybe{{row[0]}}">Maybe</label><br>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <textarea id="{{row[0]}}-notes" onchange="savedata()" name="{{row[0]}}-notes">{{row[5]}}</textarea>
+                                </form>
+                            </td>
+                            <td>
+                                <form>
+                                    <select id="{{row[0]}}-help" onchange="savedata()" name="{{row[0]}}-help">
+                                      <option value="0" {% if row[6] == 0 %} 
+                                            selected
+                                        {% endif %}>Done</option>
+                                      <option value="1" {% if row[6] == 1 %} 
+                                            selected
+                                        {% endif %}>Needs Help</option>
+                                    </select>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="fixed-top row justify-content-end" style="margin-right: 10%;">
+            <button class="btn btn-success" style="margin-top: 1em; padding: 1.5rem 1.5rem;" id="Save">Save data</button>
+        </div>
+        <div class="row">
+            <a href="https://forms.gle/Ryp1zyFgDffgsKKVA" class="btn btn-primary" target="_blank" >Report time</a>
+        </div>
+                <!-- Modal -->
+        <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModal" aria-hidden="false">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="errorModal">Error</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body" id ="testMOD">
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        (function() {
+            var proxied = window.alert;
+            window.alert = function() {
+                $("#errorModal .modal-body").html(arguments[0]);
+                $("#errorModal").modal('show');
+            };
+        })();
+        function savedata(){
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("POST", "save-button", true);
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            var i = "";
+            $('form').each(function () {
+                i = i + "&" + $(this).serialize().toString();
+            });
+            xhttp.send("savepinp=1&" + i);
+            xhttp.addEventListener('load', function() {
+                var myArr = JSON.parse(this.responseText)
+                if (myArr.length > 0) {
+                    alert(myArr.join("<br/>"));
+                }
+            });
+        }
+        $("#Save").click(savedata);
+
+    </script>
+</body>
+ 
+</html>
