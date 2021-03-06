@@ -192,7 +192,6 @@ def showPPM():
 		for d in data:
 			itemid = "0"
 			#THIS SHOULD BE COMING FROM DATABASE IF POSSIBLE
-			print(d[2])
 			searchid = "\"" + d[2] + "\""
 			box_id = box_client.search().query(query=searchid, file_extensions=['jpg'], ancestor_folder_ids="97077887697,87326350215", fields=["id", "name"], content_types=["name"])
 			for item in box_id:
@@ -272,7 +271,6 @@ def showPinP():
 
 		pinpCur.execute(pinpQuery, loc)
 		dataTuple = pinpCur.fetchall()
-		print(dataTuple)
 		pinpCur.close()
 
 		pinp2Cur = mysql.connection.cursor()

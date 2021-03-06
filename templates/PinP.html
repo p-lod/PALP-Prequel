@@ -148,10 +148,10 @@
                             <td>
                                 <form>
                                     <select id="{{row[0]}}-help" onchange="savedata()" name="{{row[0]}}-help">
-                                      <option value="0" {% if row[9] == "0" %} 
+                                      <option value="0" {% if row[9] == 0 %} 
                                             selected
                                         {% endif %}></option>
-                                      <option value="1" {% if row[9] == "1" %} 
+                                      <option value="1" {% if row[9] == 1 %} 
                                             selected
                                         {% endif %}>Needs Help</option>
                                     </select>
