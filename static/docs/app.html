@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>PALP Prequel</title>
+  <link rel="stylesheet" href="pycco.css">
+</head>
+<body>
+<div id='container'>
+  <div id="background"></div>
+  <div class='section'>
+    <div class='docs'><h1>PALP Prequel</h1></div>
+    <div class='docs'><h2>app.py</h2></div>
+  </div>
+  <div class='clearall'>
+  <div class='section' id='section-0'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-0'>#</a>
+      </div>
+      <p>Flask web application created to help researchers for the PALP project classify images.</p>
+<p><a href="https://github.com/p-lod/PALP-Prequel">Github repository</a></p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">render_template</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">json</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">redirect</span><span class="p">,</span> <span class="n">flash</span><span class="p">,</span> <span class="n">get_flashed_messages</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">make_response</span>
+<span class="kn">from</span> <span class="nn">flask_mysqldb</span> <span class="kn">import</span> <span class="n">MySQL</span>
+<span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">translate_v2</span> <span class="k">as</span> <span class="n">translate</span>
+<span class="kn">from</span> <span class="nn">google.oauth2</span> <span class="kn">import</span> <span class="n">service_account</span>
+<span class="kn">from</span> <span class="nn">googleapiclient.discovery</span> <span class="kn">import</span> <span class="n">build</span>
+<span class="kn">import</span> <span class="nn">boxsdk</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">sentry_sdk</span>
+<span class="kn">from</span> <span class="nn">sentry_sdk.integrations.flask</span> <span class="kn">import</span> <span class="n">FlaskIntegration</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-1'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-1'>#</a>
+      </div>
+      <h3><span id="setup-and-authentication" href="setup-and-authentication"> Setup and Authentication </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-2'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-2'>#</a>
+      </div>
+      <p>Using <a href="https://sentry.io/">Sentry</a> to log and report errors</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">sentry_sdk</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+    <span class="n">dsn</span><span class="o">=</span><span class="s2">&quot;https://467f5f32371848da8c0ef7a3481afd04@o493026.ingest.sentry.io/5561397&quot;</span><span class="p">,</span>
+    <span class="n">integrations</span><span class="o">=</span><span class="p">[</span><span class="n">FlaskIntegration</span><span class="p">()],</span>
+    <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">1.0</span>
+<span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-3'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-3'>#</a>
+      </div>
+      <p>Set up Flask</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;SECRET_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ShuJAxtrE8tO5ZT&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-4'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-4'>#</a>
+      </div>
+      <p>MySQL configurations</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;mysql.cfg&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mysql_cfg</span><span class="p">:</span>
+    <span class="n">mysql_cfg_lines</span> <span class="o">=</span> <span class="n">mysql_cfg</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;MYSQL_USER&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mysql_cfg_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;MYSQL_PASSWORD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mysql_cfg_lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;MYSQL_DB&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mysql_cfg_lines</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;MYSQL_HOST&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mysql_cfg_lines</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">mysql</span> <span class="o">=</span> <span class="n">MySQL</span><span class="p">(</span><span class="n">app</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-5'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-5'>#</a>
+      </div>
+      <p><a href="https://developers.google.com/sheets/api">Google Sheets</a> credentials</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="n">tr_credentials</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">Credentials</span><span class="o">.</span><span class="n">from_service_account_file</span><span class="p">(</span><span class="s2">&quot;My Project-1f2512d178cb.json&quot;</span><span class="p">)</span>
+<span class="n">scopes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;https://www.googleapis.com/auth/spreadsheets&#39;</span><span class="p">]</span>
+<span class="n">scoped_gs</span> <span class="o">=</span> <span class="n">tr_credentials</span><span class="o">.</span><span class="n">with_scopes</span><span class="p">(</span><span class="n">scopes</span><span class="p">)</span>
+<span class="n">sheets_client</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="s1">&#39;sheets&#39;</span><span class="p">,</span> <span class="s1">&#39;v4&#39;</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="n">scoped_gs</span><span class="p">)</span>
+<span class="n">tracking_ws</span> <span class="o">=</span> <span class="s2">&quot;1F4nXX1QoyV1miaRUop2ctm8snDyov6GNu9aLt9t3a3M&quot;</span>
+<span class="n">ranges</span> <span class="o">=</span> <span class="s2">&quot;Workflow_Tracking!A3:L87078&quot;</span>
+<span class="n">sheet</span> <span class="o">=</span> <span class="n">sheets_client</span><span class="o">.</span><span class="n">spreadsheets</span><span class="p">()</span>
+<span class="n">gsheet</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">spreadsheetId</span><span class="o">=</span><span class="n">tracking_ws</span><span class="p">,</span> <span class="nb">range</span><span class="o">=</span><span class="n">ranges</span><span class="p">,</span> <span class="n">majorDimension</span><span class="o">=</span><span class="s2">&quot;COLUMNS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-6'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-6'>#</a>
+      </div>
+      <p><a href="https://developer.box.com/">Box API</a> configurations</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;box_config.json&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">boxapi</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="n">box_auth</span> <span class="o">=</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">JWTAuth</span><span class="p">(</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;boxAppSettings&quot;</span><span class="p">][</span><span class="s2">&quot;clientID&quot;</span><span class="p">],</span>
+    <span class="n">client_secret</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;boxAppSettings&quot;</span><span class="p">][</span><span class="s2">&quot;clientSecret&quot;</span><span class="p">],</span>
+    <span class="n">enterprise_id</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;enterpriseID&quot;</span><span class="p">],</span>
+    <span class="n">jwt_key_id</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;boxAppSettings&quot;</span><span class="p">][</span><span class="s2">&quot;appAuth&quot;</span><span class="p">][</span><span class="s2">&quot;publicKeyID&quot;</span><span class="p">],</span>
+    <span class="n">rsa_private_key_data</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;boxAppSettings&quot;</span><span class="p">][</span><span class="s2">&quot;appAuth&quot;</span><span class="p">][</span><span class="s2">&quot;privateKey&quot;</span><span class="p">],</span>
+    <span class="n">rsa_private_key_passphrase</span><span class="o">=</span><span class="n">boxapi</span><span class="p">[</span><span class="s2">&quot;boxAppSettings&quot;</span><span class="p">][</span><span class="s2">&quot;appAuth&quot;</span><span class="p">][</span><span class="s2">&quot;passphrase&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">box_access_token</span> <span class="o">=</span> <span class="n">box_auth</span><span class="o">.</span><span class="n">authenticate_instance</span><span class="p">()</span>
+<span class="n">box_client</span> <span class="o">=</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">box_auth</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-7'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-7'>#</a>
+      </div>
+      <h3><span id="helper-function" href="helper-function"> Helper Function </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-8'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-8'>#</a>
+      </div>
+      <p>Roman numeral utility. Takes in integer Arabic number to be converted 
+(must be between 1 and 9) and turns it into a string of the Roman numeral.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">def</span> <span class="nf">toRoman</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">romans</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="s2">&quot;II&quot;</span><span class="p">,</span> <span class="s2">&quot;III&quot;</span><span class="p">,</span> <span class="s2">&quot;IV&quot;</span><span class="p">,</span> <span class="s2">&quot;V&quot;</span><span class="p">,</span> <span class="s2">&quot;VI&quot;</span><span class="p">,</span> <span class="s2">&quot;VII&quot;</span><span class="p">,</span> <span class="s2">&quot;VIII&quot;</span><span class="p">,</span> <span class="s2">&quot;IX&quot;</span><span class="p">]</span>
+    <span class="n">romin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">romin</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">romin</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">romans</span><span class="p">):</span>
+        <span class="n">romreg</span> <span class="o">=</span> <span class="n">romans</span><span class="p">[</span><span class="n">romin</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">romreg</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="k">return</span> <span class="n">romreg</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-9'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-9'>#</a>
+      </div>
+      <h3><span id="forms" href="forms"> Forms </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-10'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-10'>#</a>
+      </div>
+      <p>Log-in form. Pulls credentials from user.cfg</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/login&quot;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span> <span class="c1"># Login form</span>
+<span class="k">def</span> <span class="nf">login</span><span class="p">():</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;user.cfg&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">user_cfg</span><span class="p">:</span>
+        <span class="n">user_lines</span> <span class="o">=</span> <span class="n">user_cfg</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="n">username</span> <span class="o">=</span> <span class="n">user_lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">password</span> <span class="o">=</span> <span class="n">user_lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">password</span> <span class="ow">and</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">username</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;logged_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Sorry, wrong password!&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-11'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-11'>#</a>
+      </div>
+      <p>Form submitted from home page to select location</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/init&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span> <span class="c1">#Form submitted from home page</span>
+<span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    
+    <span class="n">building</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;-i&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;-p&quot;</span> <span class="o">+</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;-space-&quot;</span> <span class="o">+</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">gsheet</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">locationlist</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">arclist</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-12'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-12'>#</a>
+      </div>
+      <p>Find valid ARCs for data validation</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>    <span class="n">session</span><span class="p">[</span><span class="s1">&#39;validARCs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">locationlist</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">locationlist</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">building</span><span class="p">):</span>
+            <span class="n">session</span><span class="p">[</span><span class="s1">&#39;validARCs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arclist</span><span class="p">[</span><span class="n">l</span><span class="p">])</span>
+    <span class="n">session</span><span class="p">[</span><span class="s1">&#39;invcheckedARCs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="s1">&#39;/PPM&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-13'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-13'>#</a>
+      </div>
+      <p>Location search bar at top of pages</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/search&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">search</span><span class="p">():</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">referrer</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-14'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-14'>#</a>
+      </div>
+      <h3><span id="user-pages" href="user-pages"> User Pages </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-15'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-15'>#</a>
+      </div>
+      <p>Custom server error handler</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">errorhandler</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">internal_server_error</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;500.html&#39;</span><span class="p">),</span> <span class="mi">500</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-16'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-16'>#</a>
+      </div>
+      <p>Home page, displays either login form or location choice form</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-17'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-17'>#</a>
+      </div>
+      <p>Show PPM images to be classified</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/PPM&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">showPPM</span><span class="p">():</span>
+
+    <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logged_in&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">session</span><span class="p">[</span><span class="s2">&quot;logged_in&quot;</span><span class="p">]:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-18'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-18'>#</a>
+      </div>
+      <p>PPM data has individual location columns</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">ppmCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s2">&quot;SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE </span><span class="si">%s</span><span class="s2"> AND insula LIKE </span><span class="si">%s</span><span class="s2"> AND doorway LIKE </span><span class="si">%s</span><span class="s2"> AND room LIKE </span><span class="si">%s</span><span class="s2"> ORDER BY `image_path` ASC;&quot;</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toRoman</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+            <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> 
+            <span class="k">if</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+            <span class="n">room</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span> 
+            <span class="k">if</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                <span class="n">room</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">room</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+
+        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+        <span class="n">dataTuple</span> <span class="o">=</span> <span class="n">ppmCur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">ppmCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">ppm2Cur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataTuple</span><span class="p">:</span>
+            <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">ppm2Query</span> <span class="o">=</span> <span class="s2">&quot;SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image`, `need_help` FROM PPM_preq WHERE id = </span><span class="si">%s</span><span class="s2">;&quot;</span>
+            <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppm2Query</span><span class="p">,</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+            <span class="n">toin</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="n">fetched</span> <span class="o">=</span> <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fetched</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toin</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-19'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-19'>#</a>
+      </div>
+      <p>Currently uses image name in database, then searches Box to get the ID.
+Future goal: store all Box IDs in database (currently only have the ones already searched)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>        <span class="n">imgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">itemid</span> <span class="o">=</span> <span class="s2">&quot;0&quot;</span>
+            <span class="n">searchid</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+            <span class="n">box_id</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">search</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">searchid</span><span class="p">,</span> <span class="n">file_extensions</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;jpg&#39;</span><span class="p">],</span> <span class="n">ancestor_folder_ids</span><span class="o">=</span><span class="s2">&quot;97077887697,87326350215&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">content_types</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">box_id</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                    <span class="n">itemid</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">id</span>
+                    <span class="k">break</span>
+            <span class="n">imgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">itemid</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">itemid</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-20'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-20'>#</a>
+      </div>
+      <p>Download thumbnail from Box into temporary images folder (emptied once a week)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;static/images/&quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="n">itemid</span><span class="p">)</span><span class="o">.</span><span class="n">get_thumbnail</span><span class="p">(</span><span class="n">extension</span><span class="o">=</span><span class="s1">&#39;jpg&#39;</span><span class="p">,</span> <span class="n">min_width</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">BoxAPIException</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">exception</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;static/images&quot;</span><span class="p">,</span><span class="n">filename</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="n">imgs</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+             
+            <span class="n">imgQuery</span> <span class="o">=</span> <span class="s2">&quot;UPDATE PPM SET image_id= </span><span class="si">%s</span><span class="s2"> WHERE id = </span><span class="si">%s</span><span class="s2"> ;&quot;</span>
+            <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">imgQuery</span><span class="p">,</span> <span class="p">[</span><span class="n">imgs</span><span class="p">[</span><span class="n">x</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        
+        <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">ppm</span> <span class="o">=</span> <span class="n">ppmimg</span> <span class="o">=</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">ins</span> <span class="o">=</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">room</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+            <span class="n">reg</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+            <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+            <span class="n">room</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;carryoverPPM&#39;</span><span class="p">)):</span>
+            <span class="n">ppm</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;carryoverPPM&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;carryoverPPMImgs&#39;</span><span class="p">)):</span>
+            <span class="n">ppmimg</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;carryoverPPMImgs&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;PPM.html&#39;</span><span class="p">,</span>
+            <span class="n">catextppm</span><span class="o">=</span><span class="n">ppm</span><span class="p">,</span> <span class="n">catextppmimg</span><span class="o">=</span><span class="n">ppmimg</span><span class="p">,</span> <span class="n">dbdata</span> <span class="o">=</span> <span class="n">data</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">,</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">reg</span><span class="p">,</span> <span class="n">insula</span><span class="o">=</span><span class="n">ins</span><span class="p">,</span> <span class="nb">property</span><span class="o">=</span><span class="n">prop</span><span class="p">,</span> <span class="n">room</span><span class="o">=</span><span class="n">room</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s2">&quot;Sorry, this page is only accessible by logging in.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-21'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-21'>#</a>
+      </div>
+      <p>Show PinP images to be classified</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/PinP&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">showPinP</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logged_in&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">session</span><span class="p">[</span><span class="s2">&quot;logged_in&quot;</span><span class="p">]:</span>
+
+        <span class="n">pinp</span> <span class="o">=</span> <span class="n">reg</span> <span class="o">=</span> <span class="n">ins</span> <span class="o">=</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">room</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="n">pinpCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s2">&quot;SELECT DISTINCT `archive_id`, `id_box_file`, `img_alt` FROM `PinP` WHERE `pinp_regio` LIKE </span><span class="si">%s</span><span class="s2"> and `pinp_insula` LIKE </span><span class="si">%s</span><span class="s2">  and `pinp_entrance` LIKE </span><span class="si">%s</span><span class="s2"> ORDER BY `img_url` &quot;</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toRoman</span><span class="p">(</span><span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+            <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ins</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span> 
+            <span class="k">if</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>
+
+        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+        <span class="n">dataTuple</span> <span class="o">=</span> <span class="n">pinpCur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">pinpCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">pinp2Cur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataTuple</span><span class="p">:</span>
+            <span class="n">pinp2Query</span> <span class="o">=</span> <span class="s2">&quot;SELECT `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `hero_image`, `need_help` FROM PinP_preq WHERE `archive_id` = </span><span class="si">%s</span><span class="s2">;&quot;</span>
+            <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinp2Query</span><span class="p">,</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+            <span class="n">toin</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="n">fetched</span> <span class="o">=</span> <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fetched</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toin</span><span class="p">)</span>
+            <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-22'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-22'>#</a>
+      </div>
+      <p>Download thumbnail from Box into temporary images folder (emptied once a week)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;static/images/&quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">get_thumbnail</span><span class="p">(</span><span class="n">extension</span><span class="o">=</span><span class="s1">&#39;jpg&#39;</span><span class="p">,</span> <span class="n">min_width</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">BoxAPIException</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">exception</span><span class="o">.</span><span class="n">message</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;static/images&quot;</span><span class="p">,</span><span class="n">filename</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+        <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+            <span class="n">reg</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+            <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+            <span class="n">room</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;PinP.html&#39;</span><span class="p">,</span>
+            <span class="n">catextpinp</span><span class="o">=</span><span class="n">pinp</span><span class="p">,</span> <span class="n">dbdata</span> <span class="o">=</span> <span class="n">data</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">,</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">reg</span><span class="p">,</span> <span class="n">insula</span><span class="o">=</span><span class="n">ins</span><span class="p">,</span> <span class="nb">property</span><span class="o">=</span><span class="n">prop</span><span class="p">,</span> <span class="n">room</span><span class="o">=</span><span class="n">room</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s2">&quot;Sorry, this page is only accessible by logging in.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-23'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-23'>#</a>
+      </div>
+      <p>Display PinP images marked as needing help and further review</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/needs_help_pinp&#39;</span><span class="p">)</span> 
+<span class="k">def</span> <span class="nf">needs_help_pinp</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logged_in&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">session</span><span class="p">[</span><span class="s2">&quot;logged_in&quot;</span><span class="p">]:</span>
+
+        <span class="n">pinpCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s2">&quot;SELECT `archive_id`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `need_help` FROM PinP_preq WHERE `need_help` = 1;&quot;</span>
+        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+        <span class="n">dataTuple</span> <span class="o">=</span> <span class="n">pinpCur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">pinpCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">datapinp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataTuple</span><span class="p">:</span>
+            <span class="n">pinp2Cur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="n">pinp2Query</span> <span class="o">=</span> <span class="s2">&quot;SELECT DISTINCT `pinp_regio`, `pinp_insula`, `pinp_entrance`, `id_box_file`, `img_alt` FROM `PinP` WHERE `archive_id` = &#39;&quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s2">&quot;&#39;;&quot;</span>
+            <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinp2Query</span><span class="p">)</span>
+            <span class="n">fetched</span> <span class="o">=</span> <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="n">toin</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;static/images/&quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">])</span><span class="o">.</span><span class="n">get_thumbnail</span><span class="p">(</span><span class="n">extension</span><span class="o">=</span><span class="s1">&#39;jpg&#39;</span><span class="p">,</span> <span class="n">min_width</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">BoxAPIException</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">exception</span><span class="o">.</span><span class="n">message</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;static/images&quot;</span><span class="p">,</span><span class="n">filename</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+            <span class="n">datapinp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toin</span><span class="p">)</span>
+            <span class="n">pinp2Cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;needs_help_pinp.html&#39;</span><span class="p">,</span> <span class="n">dbdata</span><span class="o">=</span><span class="n">datapinp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s2">&quot;Sorry, this page is only accessible by logging in.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-24'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-24'>#</a>
+      </div>
+      <p>Display PinP images marked as needing help and further review</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/needs_help_ppm&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">needs_help_ppm</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logged_in&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">session</span><span class="p">[</span><span class="s2">&quot;logged_in&quot;</span><span class="p">]:</span>
+
+        <span class="n">ppmCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s2">&quot;SELECT `id`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `need_help` FROM PPM_preq WHERE `need_help` = 1;&quot;</span>
+        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+        <span class="n">dataTuple</span> <span class="o">=</span> <span class="n">ppmCur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+        <span class="n">ppmCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">datappm</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataTuple</span><span class="p">:</span>
+            <span class="n">ppm2Cur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="n">ppm2Query</span> <span class="o">=</span> <span class="s2">&quot;SELECT DISTINCT `region`, `insula`, `doorway`, `image_path`, `translated_text` FROM `PPM` WHERE `id` = &#39;&quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">+</span><span class="s2">&quot;&#39;;&quot;</span>
+            <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppm2Query</span><span class="p">)</span>
+            <span class="n">fetched</span> <span class="o">=</span> <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+            <span class="n">toin</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">toin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+            <span class="n">searchid</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\&quot;</span><span class="s2">&quot;</span>
+            <span class="n">box_id</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">search</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">searchid</span><span class="p">,</span> <span class="n">file_extensions</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;jpg&#39;</span><span class="p">],</span> <span class="n">ancestor_folder_ids</span><span class="o">=</span><span class="s2">&quot;97077887697,87326350215&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">content_types</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">box_id</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">fetched</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]:</span>
+                    <span class="n">itemid</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">id</span>
+                    <span class="k">break</span>
+            <span class="n">toin</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">itemid</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">itemid</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;static/images/&quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">box_client</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="n">itemid</span><span class="p">)</span><span class="o">.</span><span class="n">get_thumbnail</span><span class="p">(</span><span class="n">extension</span><span class="o">=</span><span class="s1">&#39;jpg&#39;</span><span class="p">,</span> <span class="n">min_width</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">boxsdk</span><span class="o">.</span><span class="n">BoxAPIException</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
+                    <span class="n">thumbnail</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">exception</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;static/images&quot;</span><span class="p">,</span><span class="n">filename</span><span class="p">),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">thumbnail</span><span class="p">)</span>
+            <span class="n">datappm</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">toin</span><span class="p">)</span>
+            <span class="n">ppm2Cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;needs_help_ppm.html&#39;</span><span class="p">,</span> <span class="n">dbdata</span><span class="o">=</span><span class="n">datappm</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flash</span><span class="p">(</span><span class="s2">&quot;Sorry, this page is only accessible by logging in.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;index.html&#39;</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-25'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-25'>#</a>
+      </div>
+      <p>Help page</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/help&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">help</span><span class="p">():</span>
+    <span class="n">reg</span> <span class="o">=</span> <span class="n">ins</span> <span class="o">=</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">room</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;region&#39;</span><span class="p">)):</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;region&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;insula&#39;</span><span class="p">)):</span>
+        <span class="n">ins</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;insula&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;property&#39;</span><span class="p">)):</span>
+        <span class="n">prop</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;property&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;room&#39;</span><span class="p">)):</span>
+        <span class="n">room</span> <span class="o">=</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;room&#39;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">render_template</span><span class="p">(</span><span class="s1">&#39;help.html&#39;</span><span class="p">,</span>
+        <span class="n">region</span><span class="o">=</span><span class="n">reg</span><span class="p">,</span> <span class="n">insula</span><span class="o">=</span><span class="n">ins</span><span class="p">,</span> <span class="nb">property</span><span class="o">=</span><span class="n">prop</span><span class="p">,</span> <span class="n">room</span><span class="o">=</span><span class="n">room</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-26'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-26'>#</a>
+      </div>
+      <h3><span id="save-to-database" href="save-to-database"> Save to Database </span></h3>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/save-button&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;GET&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">save_button</span><span class="p">():</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;savepinp&#39;</span><span class="p">)):</span>
+        <span class="n">pinpCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">ksplit</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ksplit</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">vstrip</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;art&quot;</span><span class="p">:</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, is_art, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `is_art` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;plaster&quot;</span><span class="p">:</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, is_plaster, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `is_plaster` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ARC&quot;</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-27'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-27'>#</a>
+      </div>
+      <p>Check if ARC submitted is in the list of ARCs for the building, flash error if not.
+Also, keep list of invalid ARCs that have already been checked so there aren&rsquo;t repeated messages.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="k">if</span> <span class="n">vstrip</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;validARCs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vstrip</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;invcheckedARCs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vstrip</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ARC&quot;</span><span class="p">:</span>
+                            <span class="n">flash</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; is not in the list of ARCs for this building.&quot;</span><span class="p">)</span>
+                            <span class="n">session</span><span class="p">[</span><span class="s1">&#39;invcheckedARCs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vstrip</span><span class="p">)</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, ARC, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="n">vstrip</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `ARC` = &quot;&#39;</span><span class="o">+</span> <span class="n">vstrip</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;others&quot;</span><span class="p">:</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, other_ARC, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `other_ARC` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;notes&quot;</span><span class="p">:</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, notes, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `notes` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-28'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-28'>#</a>
+      </div>
+      <p>Check that notes field is clean (no double quotes)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                            <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Please resubmit without double quotes (&quot;)&#39;</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;help&quot;</span><span class="p">:</span>
+                        <span class="n">pinpQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PinP_preq` (archive_id, need_help, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `need_help` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">pinpCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">pinpQuery</span><span class="p">)</span>
+        <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">pinpCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;saveppm&#39;</span><span class="p">)):</span>
+        <span class="n">ppmCur</span> <span class="o">=</span> <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">form</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">ksplit</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ksplit</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">vstrip</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;art&quot;</span><span class="p">:</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, is_art, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;) ON DUPLICATE KEY UPDATE `is_art` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;plaster&quot;</span><span class="p">:</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;) ON DUPLICATE KEY UPDATE `is_plaster` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ARC&quot;</span><span class="p">:</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-29'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-29'>#</a>
+      </div>
+      <p>Check if ARC submitted is in the list of ARCs for the building, flash error if not.
+Also, keep list of invalid ARCs that have already been checked so there aren&rsquo;t repeated messages.</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="k">if</span> <span class="n">vstrip</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;validARCs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vstrip</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">session</span><span class="p">[</span><span class="s1">&#39;invcheckedARCs&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">vstrip</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;ARC&quot;</span><span class="p">:</span>
+                            <span class="n">flash</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; is not in the list of ARCs for this building.&quot;</span><span class="p">)</span>
+                            <span class="n">session</span><span class="p">[</span><span class="s1">&#39;invcheckedARCs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vstrip</span><span class="p">)</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="n">vstrip</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;) ON DUPLICATE KEY UPDATE `ARC` = &quot;&#39;</span><span class="o">+</span> <span class="n">vstrip</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;others&quot;</span><span class="p">:</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, other_ARC, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;) ON DUPLICATE KEY UPDATE `other_ARC` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;notes&quot;</span><span class="p">:</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, notes, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;) ON DUPLICATE KEY UPDATE `notes` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-30'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-30'>#</a>
+      </div>
+      <p>Check that notes field is clean (no double quotes)</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre>                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                            <span class="n">flash</span><span class="p">(</span><span class="s1">&#39;Please resubmit without double quotes (&quot;)&#39;</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;help&quot;</span><span class="p">:</span>
+                        <span class="n">ppmQuery</span> <span class="o">=</span> <span class="s1">&#39;INSERT INTO `PPM_preq` (id, need_help, date_added) VALUES (&#39;</span><span class="o">+</span> <span class="n">ksplit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span><span class="s1">&#39;,&quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;) ON DUPLICATE KEY UPDATE `need_help` = &quot;&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&quot;, `date_added` = &quot;&#39;</span> <span class="o">+</span> <span class="n">date</span> <span class="o">+</span><span class="s1">&#39;&quot;;&#39;</span>
+                        <span class="n">ppmCur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ppmQuery</span><span class="p">)</span>
+        <span class="n">mysql</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">ppmCur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">make_response</span><span class="p">(</span><span class="n">jsonify</span><span class="p">(</span><span class="n">get_flashed_messages</span><span class="p">()),</span> <span class="mi">201</span><span class="p">)</span></pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+  <div class='section' id='section-31'>
+    <div class='docs'>
+      <div class='octowrap'>
+        <a class='octothorpe' href='#section-31'>#</a>
+      </div>
+      <p>Run Flask app</p>
+    </div>
+    <div class='code'>
+      <div class="highlight"><pre><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+</pre></div>
+    </div>
+  </div>
+  <div class='clearall'></div>
+</div>
+</body>
