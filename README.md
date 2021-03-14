@@ -13,9 +13,9 @@ Users start by entering an location, which queries the various databases. They t
 
 ## Installation
 
--   Clone or download [GitHub repository](https://github.com/alexroseb/PALP-Prequel)
--   `pip install -r requirements.txt`
--   Add relevant configuration files
+-  Clone or download [GitHub repository](https://github.com/p-lod/PALP-Prequel)
+-  `pip install -r requirements.txt`
+-  Add relevant configuration files
 -  Add empty images/ directory within static/
 
 ### Configuration Files
@@ -30,5 +30,6 @@ Users start by entering an location, which queries the various databases. They t
 
 ## File Structure
 - templates/ - HTML files that take in Flask output and display the site
-- app.py - main Flask Python file
+- app.py - main Flask Python file; [further documentation](https://prequel.p-lod.umasscreate.net/static/docs/app.html)
 - static/css/style.css - Basic styling
+- static/js - Helper JS files
