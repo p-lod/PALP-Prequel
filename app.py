@@ -402,9 +402,9 @@ def needs_help():
             datapinp.append(toin)
             ppm2Cur.close()
 
-        sorted_list = sorted(datapinp, key=lambda x: x[5])
+        sorted_list = sorted(datapinp, key=lambda x: x[4])
         sorted_list2 = sorted(sorted_list, key=lambda x: x[3])
-        dbdata = sorted(sorted_list2, key=lambda x: x[4])
+        dbdata = sorted(sorted_list2, key=lambda x: x[5])
 
         return render_template('needs_help.html', dbdata=dbdata)
     else:
