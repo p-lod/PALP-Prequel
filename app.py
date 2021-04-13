@@ -348,91 +348,65 @@ def showPinP():
         flash("Sorry, this page is only accessible by logging in.")
         return render_template('index.html')
 
-# Display PinP images marked as needing help and further review
-@app.route('/needs_help_pinp') 
-def needs_help_pinp():
+# Display images marked as needing help and further review
+@app.route('/needs_help')
+def needs_help():
     if session.get('logged_in') and session["logged_in"]:
 
+        romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", ""]
+
         pinpCur = mysql.connection.cursor()
-        pinpQuery = "SELECT `archive_id`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `need_help` FROM PinP_preq WHERE `need_help` = 1;"
+        pinpQuery = "SELECT `archive_id`, `notes` FROM PinP_preq WHERE `need_help` = 1 or `notes`<>'';"
         pinpCur.execute(pinpQuery)
         dataTuple = pinpCur.fetchall()
         pinpCur.close()
 
         datapinp = []
-        indices = []
         for d in dataTuple:
             pinp2Cur = mysql.connection.cursor()
-            pinp2Query = "SELECT DISTINCT `pinp_regio`, `pinp_insula`, `pinp_entrance`, `id_box_file`, `img_alt` FROM `PinP` WHERE `archive_id` = '"+ str(d[0])+"';"
+            pinp2Query = "SELECT DISTINCT `pinp_regio`, `pinp_insula`, `pinp_entrance` FROM `PinP` WHERE `archive_id` = '"+ str(d[0])+"';"
             pinp2Cur.execute(pinp2Query)
             fetched = pinp2Cur.fetchall()
             toin = []
             for l in d:
                 toin.append(l)
             for f in fetched[0]:
-                toin.append(f)
-            filename = str(fetched[0][3]) + ".jpg"
-            if not os.path.exists("static/images/"+filename):
-                try:
-                    thumbnail = box_client.file(fetched[0][3]).get_thumbnail(extension='jpg', min_width=200)
-                except boxsdk.BoxAPIException as exception:
-                    thumbnail = exception.message
-                with open(os.path.join("static/images",filename), "wb") as f:
-                    try:
-                        f.write(thumbnail)
-                    except TypeError:
-                        print(thumbnail)
+                toin.append(str(f))
+            toin.append(romans.index(toin[2])+1)
+            toin.append("PinP")
             datapinp.append(toin)
             pinp2Cur.close()
 
-        return render_template('needs_help_pinp.html', dbdata=datapinp)
-    else:
-        flash("Sorry, this page is only accessible by logging in.")
-        return render_template('index.html')
-
-# Display PinP images marked as needing help and further review
-@app.route('/needs_help_ppm')
-def needs_help_ppm():
-    if session.get('logged_in') and session["logged_in"]:
-
         ppmCur = mysql.connection.cursor()
-        ppmQuery = "SELECT `id`, `is_art`, `is_plaster`, `ARC`, `other_ARC`, `notes`, `need_help` FROM PPM_preq WHERE `need_help` = 1;"
+        ppmQuery = "SELECT `id`, `notes` FROM PPM_preq WHERE `need_help` = 1 or `notes`<>'';"
         ppmCur.execute(ppmQuery)
-        dataTuple = ppmCur.fetchall()
+        dataTuple2 = ppmCur.fetchall()
         ppmCur.close()
 
-        datappm = []
-        indices = []
-        for d in dataTuple:
+        for x in dataTuple2:
             ppm2Cur = mysql.connection.cursor()
-            ppm2Query = "SELECT DISTINCT `region`, `insula`, `doorway`, `image_path`, `translated_text` FROM `PPM` WHERE `id` = '"+ str(d[0])+"';"
+            ppm2Query = "SELECT DISTINCT `region`, `insula`, `doorway` FROM `PPM` WHERE `id` = '"+ str(x[0])+"';"
+            print(ppm2Query)
             ppm2Cur.execute(ppm2Query)
             fetched = ppm2Cur.fetchall()
             toin = []
-            for l in d:
+            for l in x:
                 toin.append(l)
-            for f in fetched[0]:
-                toin.append(f)
-
-            searchid = "\"" + fetched[0][3] + "\""
-            box_id = box_client.search().query(query=searchid, file_extensions=['jpg'], ancestor_folder_ids="97077887697,87326350215", fields=["id", "name"], content_types=["name"])
-            for item in box_id:
-                if item.name == fetched[0][3]:
-                    itemid = item.id
-                    break
-            toin[10] = itemid
-            filename = str(itemid) + ".jpg"
-            if not os.path.exists("static/images/"+filename):
-                try:
-                    thumbnail = box_client.file(itemid).get_thumbnail(extension='jpg', min_width=200)
-                except boxsdk.BoxAPIException as exception:
-                    thumbnail = bytes(exception.message, 'utf-8')
-                with open(os.path.join("static/images",filename), "wb") as f:
-                    f.write(thumbnail)
-            datappm.append(toin)
+            if len(fetched) > 0:
+                for f in fetched[0]:
+                    toin.append(str(f))
+            else:
+                toin.extend(['', '', ''])
+            toin.append(romans.index(toin[2])+1)
+            toin.append("PPM")
+            datapinp.append(toin)
             ppm2Cur.close()
 
-        return render_template('needs_help_ppm.html', dbdata=datappm)
+        sorted_list = sorted(datapinp, key=lambda x: x[5])
+        sorted_list2 = sorted(sorted_list, key=lambda x: x[3])
+        dbdata = sorted(sorted_list2, key=lambda x: x[4])
+
+        return render_template('needs_help.html', dbdata=dbdata)
     else:
         flash("Sorry, this page is only accessible by logging in.")
         return render_template('index.html')

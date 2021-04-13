@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <title>Needs Help - PALP Prequel</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.css">
+    <script src="https://unpkg.com/bootstrap-table@1.17.1/dist/bootstrap-table.min.js"></script>
+    <script src="{{ url_for('static', filename='js/store.everything.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.resizableColumns.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-table-master/src/extensions/resizable/bootstrap-table-resizable.js') }}"></script>
+</head>
+ 
+<body>
+ 
+    <div class="container">
+        <div class="header">
+            <h1> PALP Prequel</h1>
+        </div>
+        <div class="row"><h2>Asked for help</h2></div>
+        <div class="row">
+            <table class="table table-bordered" data-resizable="true" width="100%">
+                <colgroup>
+                    <col>
+                    <col>
+                    <col>
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th scope="col">Source</th>
+                        <th scope="col">ID</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Link</th>
+                        <th scope="col">Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in dbdata %}
+                        <tr>
+                            <td> {{row[6]}} </td>
+                            <td> {{row[0]}} </td>
+                            <td> {{row[2]}} {{row[3]}} {{row[4]}}</td>
+                            <td>
+                                <form action="https://prequel.p-lod.umasscreate.net/init" method="POST" target="_blank">
+                                    <input name="region" id="region" type="hidden" value= {{ row[5] }} >
+                                    <input name="insula" id="insula" type="hidden" value= {{ row[3] }}>
+                                    <input name="property" id="property" type="hidden" value= {{ row[4] }} >
+                                    <input type="submit" class="btn btn-outline-primary" value="View in context">
+                                </form>
+                            </td>
+                            <td> {{row[1]}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <a href="https://forms.gle/Ryp1zyFgDffgsKKVA" class="btn btn-primary" target="_blank" >Report time</a>
+        </div>
+    </div>
+</body>
+ 
+</html>
