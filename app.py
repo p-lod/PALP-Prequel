@@ -356,7 +356,7 @@ def needs_help():
         romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", ""]
 
         pinpCur = mysql.connection.cursor()
-        pinpQuery = "SELECT `archive_id`, `notes` FROM PinP_preq WHERE `need_help` = 1 or `notes`<>'';"
+        pinpQuery = "SELECT `archive_id`, `notes`, `need_help` FROM PinP_preq WHERE `need_help` = 1 or LENGTH(`notes`) > 2;"
         pinpCur.execute(pinpQuery)
         dataTuple = pinpCur.fetchall()
         pinpCur.close()
@@ -370,15 +370,18 @@ def needs_help():
             toin = []
             for l in d:
                 toin.append(l)
-            for f in fetched[0]:
-                toin.append(str(f))
-            toin.append(romans.index(toin[2])+1)
+            if len(fetched) > 0:
+                for f in fetched[0]:
+                    toin.append(str(f))
+            else:
+                toin.extend(['', '', ''])
+            toin.append(romans.index(toin[3])+1)
             toin.append("PinP")
             datapinp.append(toin)
             pinp2Cur.close()
 
         ppmCur = mysql.connection.cursor()
-        ppmQuery = "SELECT `id`, `notes` FROM PPM_preq WHERE `need_help` = 1 or `notes`<>'';"
+        ppmQuery = "SELECT `id`, `notes`, `need_help` FROM PPM_preq WHERE `need_help` = 1 or LENGTH(`notes`) > 2;"
         ppmCur.execute(ppmQuery)
         dataTuple2 = ppmCur.fetchall()
         ppmCur.close()
@@ -397,14 +400,15 @@ def needs_help():
                     toin.append(str(f))
             else:
                 toin.extend(['', '', ''])
-            toin.append(romans.index(toin[2])+1)
+            toin.append(romans.index(toin[3])+1)
             toin.append("PPM")
             datapinp.append(toin)
             ppm2Cur.close()
 
-        sorted_list = sorted(datapinp, key=lambda x: x[4])
-        sorted_list2 = sorted(sorted_list, key=lambda x: x[3])
-        dbdata = sorted(sorted_list2, key=lambda x: x[5])
+        sorted_list = sorted(datapinp, key=lambda x: x[5])
+        sorted_list2 = sorted(sorted_list, key=lambda x: x[4])
+        dbdata = sorted(sorted_list2, key=lambda x: x[6])
+        dbdata = sorted(dbdata, key=lambda x: x[2], reverse=True)
 
         return render_template('needs_help.html', dbdata=dbdata)
     else:

@@ -13,6 +13,8 @@
     <script src="{{ url_for('static', filename='js/store.everything.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.resizableColumns.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap-table-master/src/extensions/resizable/bootstrap-table-resizable.js') }}"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
 </head>
  
 <body>
@@ -23,7 +25,7 @@
         </div>
         <div class="row"><h2>Asked for help</h2></div>
         <div class="row">
-            <table class="table table-bordered" data-resizable="true" width="100%">
+            <table class="table table-bordered" id="pagedtable" data-resizable="true" width="100%" data-page-length='100' data-order="[]">
                 <colgroup>
                     <col>
                     <col>
@@ -35,23 +37,25 @@
                         <th scope="col">ID</th>
                         <th scope="col">Location</th>
                         <th scope="col">Link</th>
+                        <th scope="col">Needs help</th>
                         <th scope="col">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in dbdata %}
                         <tr>
-                            <td> {{row[6]}} </td>
+                            <td> {{row[7]}} </td>
                             <td> {{row[0]}} </td>
-                            <td> {{row[2]}} {{row[3]}} {{row[4]}}</td>
+                            <td> {{row[3]}} {{row[4]}} {{row[5]}}</td>
                             <td>
                                 <form action="https://prequel.p-lod.umasscreate.net/init" method="POST" target="_blank">
-                                    <input name="region" id="region" type="hidden" value= {{ row[5] }} >
-                                    <input name="insula" id="insula" type="hidden" value= {{ row[3] }}>
-                                    <input name="property" id="property" type="hidden" value= {{ row[4] }} >
+                                    <input name="region" id="region" type="hidden" value= {{ row[6] }} >
+                                    <input name="insula" id="insula" type="hidden" value= {{ row[4] }}>
+                                    <input name="property" id="property" type="hidden" value= {{ row[5] }} >
                                     <input type="submit" class="btn btn-outline-primary" value="View in context">
                                 </form>
                             </td>
+                            <td> {% if row[2] == 1 %}Needs help {% endif %}</td>
                             <td> {{row[1]}}</td>
                         </tr>
                     {% endfor %}
@@ -62,6 +66,13 @@
             <a href="https://forms.gle/Ryp1zyFgDffgsKKVA" class="btn btn-primary" target="_blank" >Report time</a>
         </div>
     </div>
+    <script>
+        $(document).ready( function () {
+            $('#pagedtable').DataTable({
+              "lengthMenu": [ [50, 100, 200, 1000, -1], [50, 100, 200, 1000, 'All'] ]
+            });
+        });
+    </script>
 </body>
  
 </html>
