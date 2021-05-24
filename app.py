@@ -17,6 +17,8 @@ import os
 import glob
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
+import requests
+
 
 # === Setup and Authentication ===
 
@@ -165,6 +167,8 @@ def index():
 def showPPM():
 
     if session.get('logged_in') and session["logged_in"]:
+        base_url = "http://umassamherst.lunaimaging.com/luna/servlet/as/search?"
+
         #PPM data has individual location columns
         ppmCur = mysql.connection.cursor()
         ppmQuery = "SELECT id, description, image_path, region, insula, doorway, room, translated_text FROM PPM WHERE region LIKE %s AND insula LIKE %s AND doorway LIKE %s AND room LIKE %s ORDER BY `image_path` ASC;"
@@ -215,8 +219,7 @@ def showPPM():
                     toin.append(j)
             data.append(toin)
 
-        # Currently uses image name in database, then searches Box to get the ID.
-        # Future goal: store all Box IDs in database (currently only have the ones already searched)
+        ### START BOX - to be replaced
         imgs = []
         for d in data:
             itemid = "0"
@@ -242,6 +245,19 @@ def showPPM():
              
             imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
             ppm2Cur.execute(imgQuery, [imgs[x], data[x][0]])
+        ### END BOX
+        # for d in data:
+        #     toin = []
+        #     params = ["q=filename=image"+str(d[0]) + ".jpg", "lc=umass~14~14"]
+        #     request = requests.get(base_url+"&".join(params))
+        #     result = request.json()
+        #     if len(result['results']) > 0:
+        #         toin.append(result['results'][0]['urlSize1'])
+        #         toin.append(result['results'][0]['id'])
+        #     else:
+        #         toin.append("")
+        #         toin.append("")
+        #     d.insert(8, toin)
         mysql.connection.commit()
         
         ppm2Cur.close()
@@ -274,6 +290,7 @@ def showPPM():
 def showPinP():
     if session.get('logged_in') and session["logged_in"]:
 
+        base_url = "http://umassamherst.lunaimaging.com/luna/servlet/as/search?"
         pinp = reg = ins = prop = room = ""
 
         pinpCur = mysql.connection.cursor()
@@ -316,20 +333,18 @@ def showPinP():
             if len(fetched) > 0:
                 for j in fetched[0]:
                     toin.append(j)
-            data.append(toin)
             indices.append(d[1])
             filename = str(d[1]) + ".jpg"
-            # Download thumbnail from Box into temporary images folder (emptied once a week)
-            if not os.path.exists("static/images/"+filename):
-                try:
-                    thumbnail = box_client.file(d[1]).get_thumbnail(extension='jpg', min_width=200)
-                except boxsdk.BoxAPIException as exception:
-                    thumbnail = exception.message
-                with open(os.path.join("static/images",filename), "wb") as f:
-                    try:
-                        f.write(thumbnail)
-                    except TypeError:
-                        print(thumbnail)
+            params = ["q=filename=image"+str(d[0]) + ".jpg", "lc=umass~14~14"]
+            request = requests.get(base_url+"&".join(params))
+            result = request.json()
+            if len(result['results']) > 0:
+                toin.append(result['results'][0]['urlSize1'])
+                toin.append(result['results'][0]['id'])
+            else:
+                toin.append("")
+                toin.append("")
+            data.append(toin)
         pinp2Cur.close()
 
         if (session.get('region')):
