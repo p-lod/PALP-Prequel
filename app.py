@@ -219,45 +219,18 @@ def showPPM():
                     toin.append(j)
             data.append(toin)
 
-        ### START BOX - to be replaced
-        imgs = []
         for d in data:
-            itemid = "0"
-            searchid = "\"" + d[2] + "\""
-            box_id = box_client.search().query(query=searchid, file_extensions=['jpg'], ancestor_folder_ids="97077887697,87326350215", fields=["id", "name"], content_types=["name"])
-            for item in box_id:
-                if item.name == d[2]:
-                    itemid = item.id
-                    break
-            imgs.append(itemid)
-            filename = str(itemid) + ".jpg"
-            # Download thumbnail from Box into temporary images folder (emptied once a week)
-            if not os.path.exists("static/images/"+filename):
-                try:
-                    thumbnail = box_client.file(itemid).get_thumbnail(extension='jpg', min_width=200)
-                except boxsdk.BoxAPIException as exception:
-                    thumbnail = bytes(exception.message, 'utf-8')
-                with open(os.path.join("static/images",filename), "wb") as f:
-                    f.write(thumbnail)
-        
-        for x in range(len(data)):
-            data[x].insert(8,imgs[x])
-             
-            imgQuery = "UPDATE PPM SET image_id= %s WHERE id = %s ;"
-            ppm2Cur.execute(imgQuery, [imgs[x], data[x][0]])
-        ### END BOX
-        # for d in data:
-        #     toin = []
-        #     params = ["q=filename=image"+str(d[0]) + ".jpg", "lc=umass~14~14"]
-        #     request = requests.get(base_url+"&".join(params))
-        #     result = request.json()
-        #     if len(result['results']) > 0:
-        #         toin.append(result['results'][0]['urlSize1'])
-        #         toin.append(result['results'][0]['id'])
-        #     else:
-        #         toin.append("")
-        #         toin.append("")
-        #     d.insert(8, toin)
+            toin = []
+            params = ["q=filename="+str(d[0]) + ".jpg", "lc=umass~16~16"]
+            request = requests.get(base_url+"&".join(params))
+            result = request.json()
+            if len(result['results']) > 0:
+                toin.append(result['results'][0]['urlSize1'])
+                toin.append(result['results'][0]['id'])
+            else:
+                toin.append("")
+                toin.append("")
+            d.insert(8, toin)
         mysql.connection.commit()
         
         ppm2Cur.close()
@@ -335,7 +308,7 @@ def showPinP():
                     toin.append(j)
             indices.append(d[1])
             filename = str(d[1]) + ".jpg"
-            params = ["q=filename=image"+str(d[0]) + ".jpg", "lc=umass~14~14"]
+            params = ["q=archive_id=PALP_"+str(d[0]), "lc=umass~14~14"]
             request = requests.get(base_url+"&".join(params))
             result = request.json()
             if len(result['results']) > 0:
@@ -495,10 +468,10 @@ def save_button():
                 if len(ksplit) > 1:
                     vstrip = str(v).strip()
                     if ksplit[1] == "art":
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, is_art, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, is_art, date_added) VALUES ("'+ ksplit[0] +'","'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_art` = "'+ str(v) + '", `date_added` = "' + date +'";'
                         ppmCur.execute(ppmQuery)
                     elif ksplit[1] == "plaster":
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, is_plaster, date_added) VALUES ("'+ ksplit[0] +'","'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `is_plaster` = "'+ str(v) + '", `date_added` = "' + date +'";'
                         ppmCur.execute(ppmQuery)
                     elif ksplit[1] == "ARC":
                         # Check if ARC submitted is in the list of ARCs for the building, flash error if not.
@@ -506,20 +479,20 @@ def save_button():
                         if vstrip not in session['validARCs'] and vstrip not in session['invcheckedARCs'] and vstrip[:3] == "ARC":
                             flash(str(v) + " is not in the list of ARCs for this building.")
                             session['invcheckedARCs'].append(vstrip)
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ('+ ksplit[0] +',"'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, ARC, date_added) VALUES ("'+ ksplit[0] +'","'+ vstrip + '",'+ date +') ON DUPLICATE KEY UPDATE `ARC` = "'+ vstrip + '", `date_added` = "' + date +'";'
                         ppmCur.execute(ppmQuery)
                     elif ksplit[1] == "others":
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, other_ARC, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, other_ARC, date_added) VALUES ("'+ ksplit[0] +'","'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `other_ARC` = "'+ str(v) + '", `date_added` = "' + date +'";'
                         ppmCur.execute(ppmQuery)
                     elif ksplit[1] == "notes":
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, notes, date_added) VALUES ("'+ ksplit[0] +'","'+ str(v) + '",'+ date +') ON DUPLICATE KEY UPDATE `notes` = "'+ str(v) + '", `date_added` = "' + date +'";'
                         # Check that notes field is clean (no double quotes)
                         try:
                             ppmCur.execute(ppmQuery)
                         except Exception:
                             flash('Please resubmit without double quotes (")')
                     elif ksplit[1] == "help":
-                        ppmQuery = 'INSERT INTO `PPM_preq` (id, need_help, date_added) VALUES ('+ ksplit[0] +',"'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `need_help` = "'+ str(v) + '", `date_added` = "' + date +'";'
+                        ppmQuery = 'INSERT INTO `PPM_preq` (id, need_help, date_added) VALUES ("'+ ksplit[0] +'","'+ str(v) + '","'+ date +'") ON DUPLICATE KEY UPDATE `need_help` = "'+ str(v) + '", `date_added` = "' + date +'";'
                         ppmCur.execute(ppmQuery)
         mysql.connection.commit()
         ppmCur.close()
